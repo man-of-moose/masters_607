@@ -1,0 +1,83 @@
+---
+title: "607_homework_1"
+author: "Alec"
+date: "8/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This homework assignment analyzes a dataset discussed in the FiveThirtyEight article titled "Why Many Americans Don't Vote". The dataset is based on survey results collected from over 8,000 participants, and is focused on identifying patterns surrounding individuals' willingness or unwillingness to vote in US elections.
+
+The original dataset includes questions about race, gender, income, age, party association, weight, and of course the target variable "voter_category". Individuals are bucketed into three voter_categories: "Never Vote", "Sometimes Vote", "Always Vote".
+
+Voter apathy is a crux to any functioning democracy, so analysis of this sort is critical to understanding why individuals may choose to not participate, as well as identifying means to increase voter engagement for those "Not Voters" today.
+
+Link to article: 
+
+https://projects.fivethirtyeight.com/non-voters-poll-2020-election/
+
+## Import Tidyverse and CSV data
+
+Using the read_csv function, we load the downloaded dataset into R
+
+```{r }
+library("tidyverse")
+
+nonvoters = read_csv("nonvoters_data.csv")
+
+```
+
+## Create initial subset dataframe
+
+This dataset includes over 100 features. 6 of these features are descriptive of the survey respondent, including features like "weight" and "age". The remaining features include coded responses to questions targeting individuals' beliefs and personal feelings relating to the electoral process.
+
+To begin my analysis, I chose to focus only on the "descriptive" features to see if there are any correlations between these and the target "voter_category".
+
+```{r }
+
+voters_subset = nonvoters[,c("RespId","weight","ppage","educ","race","gender","income_cat","voter_category")]
+```
+
+
+## Change column names for clarity
+
+Certain feature titles are not clear, such as "ppage". I chose to rename the features for clarity as follows:
+
+```{r }
+
+new_names <- c("id","weight","age","education","race","gender","income_category","voter_category")
+
+colnames(voters_subset) <- new_names
+
+voters_subset
+
+```
+## Convert education and income_category to ordered factors
+
+Of the descriptive features selected for this analysis, two are Ordinal and as such I decided to convert these features to Factors.
+
+```{r convert education and income_category to ordered factors}
+
+unique(voters_subset$income_category)
+
+str(voters_subset)
+
+voters_subset$education <- as.factor(voters_subset$education)
+voters_subset$income_category <- as.factor(voters_subset$income_category)
+
+levels(voters_subset$education) <- c("High school or less","Some College","College")
+
+levels(voters_subset$income_category) <- c("Less than $40k","$40-75k" ,"$75-125k","$125k or more")
+```
+
+## Conclusion
+
+Following this exercise of sub-setting the Voter's dataset, I plan to follow up with further statistical and graphical analysis of the chosen features to determine if there are any correlations between them and the target variable. This sort of analysis will be greatly beneficial in the subsequent modeling process, where I will use the collected data to create a predictive model focused on classifying individuals as either "Not Voters", "Sometimes Voters", or "Always Voters".
+
+Following this, I will see if I can improve upon my results by including additional features initially excluded in the first subset.
+
