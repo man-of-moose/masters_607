@@ -2,7 +2,7 @@
 title: "607_homework_2"
 author: "Alec"
 date: "9/4/2021"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
