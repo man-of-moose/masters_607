@@ -1,0 +1,246 @@
+---
+title: "607_homework_3"
+author: "Alec"
+date: "9/9/2021"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Libraries
+
+```{r}
+library(tidyverse)
+library(stringr)
+library(htmlwidgets)
+```
+
+# Question 1
+
+Using the 173 majors listed in fivethirtyeight.com’s College Majors dataset [https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/], provide code that identifies the majors that contain either "DATA" or "STATISTICS"
+
+## Load the data from github using readr package
+
+The readr package is a great way to load data from github
+
+```{r load data}
+
+library(readr)
+
+major_data <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv")
+
+```
+
+## write code that receives the major_dataset, a character vector containing desired major search terms, and returns the matching major names
+
+```{r }
+
+retrieve_majors_with_x <- function(major_data, words) {
+  
+  pipe_words <- str_c(words, collapse= "|")
+  
+  return(major_data$Major %>% str_subset(pipe_words))
+}
+
+```
+
+## test the formula with "DATA" and "STATISTICS"
+
+```{r}
+input_major_string <- c("DATA","STATISTICS")
+
+final_value <- retrieve_majors_with_x(major_data, input_major_string)
+
+final_value
+```
+
+## test the formula with anothr set of search terms
+
+```{r}
+input_major_string <- c("BUSINESS","DATA","STATISTICS","PSYCHOLOGY")
+
+final_value <- retrieve_majors_with_x(major_data, input_major_string)
+
+final_value
+
+```
+
+
+# Question 2
+Write code that transforms 'input_data' (in the form of a .CSV file) into 'expected_output'
+
+## load the input and expected output data
+
+```{r load input_data and expected_output data}
+
+input_data <- read.csv("homework_2_q_2.csv", header = FALSE)
+
+expected_output <- c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+
+input_data
+```
+
+## write code that converts input to output
+
+My approach is to first concatenate all of the rows of the csv file into one string. Following this I will use regex to remove the [##] values. At this point, I can extract any text that is surrounded by quotation marks. Following this extraction, I remove the quotation marks, and the result will match the expected data.
+
+```{r write code that converts input_format into output_format}
+format_conversion <- function(input_data) {
+  # first we concatenate all the rows of the .CSV file
+  
+  concat <- ""
+  
+  for (x in 1:nrow(input_data)) {
+    concat <- str_c(concat, input_data[x,])
+  }
+  
+  # next we remove all '[#]'s from the concatenated string and extract everything where there is text/spaces between quotation marks                 eg. '"apple sauce"'
+  
+  extracted_values <- concat %>% 
+    str_replace_all("\\[\\d+\\]\\s", "") %>%
+    str_extract_all("\"[a-z\\s]+\"")
+  
+  #finally, convert extracted_values into a character vector, and remove all quotation marks
+  
+  final_format <- str_replace_all(unlist(extracted_values[1]),"\"","")
+  
+  return(final_format)
+}
+
+```
+
+Another, simpler function I made after some more thought:
+
+```{r}
+convert_input <- function(input_data) {
+  
+  ret <- str_c(input_data$V1, collapse="") %>% 
+    str_extract_all('[A-Za-z]+.?[A-Za-z]+')
+  
+  return(unlist(ret[1]))
+}
+```
+
+
+## run code, and verify that output == expectd_output for both functions
+
+```{r}
+output <- format_conversion(input_data)
+
+output2 <- convert_input(input_data)
+```
+
+```{r}
+output == expected_output
+```
+
+```{r}
+output2 == expected_output
+```
+
+# Quesiton 3 - Describe what these expressions will match
+
+## (.)\1\1
+
+Without quotations, this should be interpreted as a "numeric expression". As such, this expression would match against any substring that occurs three times in a row within a string.
+
+But if you try to enter this into R with quotations, you will match against something entirely different, and unexpcted. You would match against a substring that contains any character, followed by two escaped 1's:
+
+```{r}
+example <- c("brrr\1\1r","hmmm\1","assass\2\2in")
+str_extract(example,"(.)\1\1")
+```
+
+
+If you want to get three characters in a row, then you need to convert the numeric expression to a string expression, by escaping the backslashes: "(.)\\1\\1"
+
+The regex "(.)\\1\\1" would match substrings with three repeating characters.
+
+```{r}
+example <- c("brrrr","hmmmattt","assassin")
+str_extract_all(example,"(.)\\1\\1")
+```
+
+## "(.)(.)\\2\\1"
+
+This will match 4 character palindrome substrings
+
+```{r}
+example <- c("racecar","woowzers","rocks")
+str_extract(example,"(.)(.)\\2\\1")
+
+```
+
+## (..)\1
+
+This is similar to the first one. It will match any two characters followed by an escaped 1 (\1) unless you convert to a string expression.
+
+```{r}
+example <- c("hello\1","h\1","bingo")
+str_extract(example, "(..)\1")
+
+```
+When using double slashes, like "(..)\\1", then it would match a four character string, starting with the first two characters repeating
+
+```{r}
+example <- c("banana","titilating","money")
+str_extract(example, "(..)\\1")
+```
+
+## "(.).\\1.\\1"
+
+This will match a character X, followed by a single character (unspecificed), followed by X, followed by a character (unspecified), followed by X.
+
+```{r}
+
+example <- c("T-T6T Freight Engine", "Monopoly","battleship")
+str_extract(example, "(.).\\1.\\1")
+
+```
+
+
+## "(.)(.)(.).*\\3\\2\\1"
+
+This will match a substring whose last three characters are the reverse of the first three characters. However there must be any number of characters between the first three, and the last three.
+
+```{r}
+
+example <- c("123thisisnotmypassword321","hello_mister_sim","dogs")
+str_extract(example, "(.)(.)(.).*\\3\\2\\1")
+
+```
+
+# Question 4 - construct regex to match the following
+
+## Start and end with the same character.
+
+```{r}
+pattern <- "(.).*\\1"
+example <- c("nylon","velcro","Mr. Greenberg")
+str_extract(example, pattern)
+
+
+```
+
+
+## Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.)
+
+```{r}
+pattern <- ".*(..).*\\1.*"
+example <- c("church","bigbird","other")
+str_extract(example, pattern)
+```
+
+## Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.)
+
+```{r}
+pattern <- ".*(.).*\\1.*\\1.*"
+example <- c("eleven","bananana","mount sinai")
+str_extract(example, pattern)
+```
+
+
