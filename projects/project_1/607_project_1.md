@@ -3,28 +3,52 @@ title: "Wrangling Chess Tournament Data"
 author: "Alec McCabe"
 date: "9/12/2021"
 output:
-  # use the below for pdf
-  pdf_document
-  # use the below for nice html
-  #prettydoc::html_pretty:
-    #theme: cosmo
-    #highlight: github
-    #keep_md: true
+  #html_document:
     #df_print: paged
+    #theme: prettydoc::html_pretty:architect
+    #highlight: espresso
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
 
 # Setup
 
 ### Load libraries
 
-```{r}
+
+```r
 library(tidyverse)
+```
+
+```
+## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+```
+
+```
+## ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
+## ✓ tibble  3.1.4     ✓ dplyr   1.0.7
+## ✓ tidyr   1.1.3     ✓ stringr 1.4.0
+## ✓ readr   2.0.1     ✓ forcats 0.5.1
+```
+
+```
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+```
+
+```r
 library(stringr)
 library("RMySQL")
+```
+
+```
+## Loading required package: DBI
 ```
 
 ### Establish connection to SQL
@@ -35,7 +59,8 @@ After processing and formatting the input data as per assignment instructions, w
 
 - scores: a table of player scores from tournaments played
 
-```{r}
+
+```r
 mydb = dbConnect(MySQL(), user = 'root', dbname='data_607', host='localhost')
 ```
 
@@ -43,12 +68,23 @@ lapply(dbListConnections(dbDriver(drv = "MySQL")), dbDisconnect)
 
 ### Import data and inspect
 
-```{r}
+
+```r
 data = read.table("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_1/chess_file.txt", sep="|",fill=TRUE)
 ```
 
-```{r}
+
+```r
 head(data[,'V1'])
+```
+
+```
+## [1] "-----------------------------------------------------------------------------------------"
+## [2] " Pair "                                                                                   
+## [3] " Num  "                                                                                   
+## [4] "-----------------------------------------------------------------------------------------"
+## [5] "    1 "                                                                                   
+## [6] "   ON "
 ```
 
 # Convert [input data] --> [desired assignment format]
@@ -70,7 +106,8 @@ This assignment's input data is a "|" delimited .txt file containing information
 
 Rename columns to make analysis meaningful
 
-```{r}
+
+```r
 column_names <- c("id","name","total","round_1","round_2","round_3","round_4",
                   "round_5","round_6","round_7","delete")
 
@@ -82,7 +119,8 @@ colnames(data) <- column_names
 
 Following data import, there are some rows that serve no purpose for our assignment. Additionally, an unexpected column of NAs was created which we will want to delete. We will use dplyr::filer and dplyr::select to achieve this.
 
-```{r}
+
+```r
 data<- data %>% 
         filter(str_detect(id, "[a-zA-z\\d]")) %>%
         select(-delete)
@@ -92,15 +130,23 @@ data<- data %>%
 
 Due to the structure of the input data, and the steps we've taken so far, our current dataframe is structured in an interesting way. Rows with a numeric "id" value contain information about a player's name, their total score, and the rounds they played. While rows with a character "id" contain information about a player's state and pre_score.
 
-```{r}
+
+```r
 head(data)
 ```
+
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["id"],"name":[1],"type":["chr"],"align":["left"]},{"label":["name"],"name":[2],"type":["chr"],"align":["left"]},{"label":["total"],"name":[3],"type":["chr"],"align":["left"]},{"label":["round_1"],"name":[4],"type":["chr"],"align":["left"]},{"label":["round_2"],"name":[5],"type":["chr"],"align":["left"]},{"label":["round_3"],"name":[6],"type":["chr"],"align":["left"]},{"label":["round_4"],"name":[7],"type":["chr"],"align":["left"]},{"label":["round_5"],"name":[8],"type":["chr"],"align":["left"]},{"label":["round_6"],"name":[9],"type":["chr"],"align":["left"]},{"label":["round_7"],"name":[10],"type":["chr"],"align":["left"]}],"data":[{"1":"Pair","2":"Player Name","3":"Total","4":"Round","5":"Round","6":"Round","7":"Round","8":"Round","9":"Round","10":"Round","_rn_":"1"},{"1":"Num","2":"USCF ID / Rtg (Pre->Post)","3":"Pts","4":"1","5":"2","6":"3","7":"4","8":"5","9":"6","10":"7","_rn_":"2"},{"1":"1","2":"GARY HUA","3":"6.0","4":"W  39","5":"W  21","6":"W  18","7":"W  14","8":"W   7","9":"D  12","10":"D   4","_rn_":"3"},{"1":"ON","2":"15445895 / R: 1794   ->1817","3":"N:2","4":"W","5":"B","6":"W","7":"B","8":"W","9":"B","10":"W","_rn_":"4"},{"1":"2","2":"DAKSHESH DARURI","3":"6.0","4":"W  63","5":"W  58","6":"L   4","7":"W  17","8":"W  16","9":"W  20","10":"W   7","_rn_":"5"},{"1":"MI","2":"14598900 / R: 1553   ->1663","3":"N:2","4":"B","5":"W","6":"B","7":"W","8":"B","9":"W","10":"B","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 
 ### Get state_data character vector
 
 We need to capture the state data in a character vector, to later be used to represent the state column of our output. We can do this by filtering for rows that contain 2 capital letters, and saving the "id" column into a variable called state_data
 
-```{r}
+
+```r
 state_data <- data$id
 state_data <- state_data[grepl("[A-Z]{2}",state_data)]
 state_data <- str_trim(state_data, side = c("both"))
@@ -110,7 +156,8 @@ state_data <- str_trim(state_data, side = c("both"))
 
 We can extract the pre_score data in the same way we did state_data. Unlike state_data, the pre_score data will require more advanced regex to properly extract.
 
-```{r}
+
+```r
 pre_score_data <- data$name
 
 data$id <- data$id %>%
@@ -130,7 +177,8 @@ pre_score_data <- pre_score_data %>%
 
 Now that we've extracted the state data and pre_score data, we can remove rows with non-numeric values.
 
-```{r}
+
+```r
 data <- data %>% 
         filter(str_detect(id,"\\d"))
 ```
@@ -139,7 +187,8 @@ data <- data %>%
 
 And now we can take state_data and pre_score_data and add them as new columns to the recently filtered dataframe.
 
-```{r}
+
+```r
 data$state <- state_data
 data$pre_score <- as.integer(pre_score_data)
 ```
@@ -148,19 +197,28 @@ data$pre_score <- as.integer(pre_score_data)
 
 Using dply::select and everything() we can easily re-arrange our column values for easier reading.
 
-```{r}
+
+```r
 data <- data %>% select(name, state, pre_score, total, everything())
 ```
 
-```{r}
+
+```r
 head(data)
 ```
+
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["name"],"name":[1],"type":["chr"],"align":["left"]},{"label":["state"],"name":[2],"type":["chr"],"align":["left"]},{"label":["pre_score"],"name":[3],"type":["int"],"align":["right"]},{"label":["total"],"name":[4],"type":["chr"],"align":["left"]},{"label":["id"],"name":[5],"type":["chr"],"align":["left"]},{"label":["round_1"],"name":[6],"type":["chr"],"align":["left"]},{"label":["round_2"],"name":[7],"type":["chr"],"align":["left"]},{"label":["round_3"],"name":[8],"type":["chr"],"align":["left"]},{"label":["round_4"],"name":[9],"type":["chr"],"align":["left"]},{"label":["round_5"],"name":[10],"type":["chr"],"align":["left"]},{"label":["round_6"],"name":[11],"type":["chr"],"align":["left"]},{"label":["round_7"],"name":[12],"type":["chr"],"align":["left"]}],"data":[{"1":"GARY HUA","2":"ON","3":"1794","4":"6.0","5":"1","6":"W  39","7":"W  21","8":"W  18","9":"W  14","10":"W   7","11":"D  12","12":"D   4","_rn_":"1"},{"1":"DAKSHESH DARURI","2":"MI","3":"1553","4":"6.0","5":"2","6":"W  63","7":"W  58","8":"L   4","9":"W  17","10":"W  16","11":"W  20","12":"W   7","_rn_":"2"},{"1":"ADITYA BAJAJ","2":"MI","3":"1384","4":"6.0","5":"3","6":"L   8","7":"W  61","8":"W  25","9":"W  21","10":"W  11","11":"W  13","12":"W  12","_rn_":"3"},{"1":"PATRICK H SCHILLING","2":"MI","3":"1716","4":"5.5","5":"4","6":"W  23","7":"D  28","8":"W   2","9":"W  26","10":"D   5","11":"W  19","12":"D   1","_rn_":"4"},{"1":"HANSHI ZUO","2":"MI","3":"1655","4":"5.5","5":"5","6":"W  45","7":"W  37","8":"D  12","9":"D  13","10":"D   4","11":"W  14","12":"W  17","_rn_":"5"},{"1":"HANSEN SONG","2":"OH","3":"1686","4":"5.0","5":"6","6":"W  34","7":"D  29","8":"L  11","9":"W  35","10":"D  10","11":"W  27","12":"W  21","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 
 ### Convert total into double
 
 The 'total' value was parsed as a character. since we will be applying math to this later, we need to convert to a double.
 
-```{r}
+
+```r
 data$total <- as.double(data$total)
 ```
 
@@ -172,8 +230,8 @@ c(39,21,18,14,7,12,4)
 
 This is achieved by first concatenating each of the "round_" columns. Following this, we use stringr to parse out and collect the opponent ids.
 
-```{r}
 
+```r
 data <- data %>% mutate(oppo_ids = str_c(round_1,round_2,round_3,round_4,round_5,round_6,round_7))
 
 data$oppo_ids <- data$oppo_ids %>% 
@@ -182,14 +240,14 @@ data$oppo_ids <- data$oppo_ids %>%
   str_replace_all("\\s{2,}","|")
 
 data$oppo_ids <- data$oppo_ids %>% str_split("\\|")
-
 ```
 
 ### Create function to calculate average opponent score
 
 This function will use the previously created "oppo_id" column values as input, in order to filter for and average the correct opponent pre_scores.
 
-```{r}
+
+```r
 get_avg_oppo_score <- function(id_data) {
   temp_df <- data %>% 
               filter(id %in% id_data) %>%
@@ -201,13 +259,19 @@ get_avg_oppo_score <- function(id_data) {
 
 ### Test it out on the first example
 
-```{r}
+
+```r
 get_avg_oppo_score(c(39,21,18,14,7,12,4))
+```
+
+```
+## [1] 1605.286
 ```
 
 ### Apply function to entire dataframe
 
-```{r}
+
+```r
 data$avg_oppo_score <- lapply(data$oppo_ids,FUN=get_avg_oppo_score)
 ```
 
@@ -215,7 +279,8 @@ data$avg_oppo_score <- lapply(data$oppo_ids,FUN=get_avg_oppo_score)
 
 We will need this later on for extra credit. Here we are counting how many games each player participated in.
 
-```{r}
+
+```r
 data$number_of_games <- as.integer(lapply(lapply(data$oppo_ids, FUN=lengths),FUN=sum))
 ```
 
@@ -223,7 +288,8 @@ data$number_of_games <- as.integer(lapply(lapply(data$oppo_ids, FUN=lengths),FUN
 
 There are a few columns we don't need anymore such as all of the "round_" columns, the "oppo_ids" column, and others. We can use dplyr::select to select only what's interesting.
 
-```{r}
+
+```r
 final_data <- data %>%
   select(name, state, total, number_of_games, pre_score, avg_oppo_score)
 ```
@@ -232,19 +298,28 @@ final_data <- data %>%
 
 Based on the description of this project, we will be rounding the values of avg_oppo_score with the round() function.
 
-```{r}
+
+```r
 final_data$avg_oppo_score <- as.integer(lapply(final_data$avg_oppo_score,FUN=round))
 ```
 
-```{r}
+
+```r
 final_data
 ```
+
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":["name"],"name":[1],"type":["chr"],"align":["left"]},{"label":["state"],"name":[2],"type":["chr"],"align":["left"]},{"label":["total"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["number_of_games"],"name":[4],"type":["int"],"align":["right"]},{"label":["pre_score"],"name":[5],"type":["int"],"align":["right"]},{"label":["avg_oppo_score"],"name":[6],"type":["int"],"align":["right"]}],"data":[{"1":"GARY HUA","2":"ON","3":"6.0","4":"7","5":"1794","6":"1605"},{"1":"DAKSHESH DARURI","2":"MI","3":"6.0","4":"7","5":"1553","6":"1469"},{"1":"ADITYA BAJAJ","2":"MI","3":"6.0","4":"7","5":"1384","6":"1564"},{"1":"PATRICK H SCHILLING","2":"MI","3":"5.5","4":"7","5":"1716","6":"1574"},{"1":"HANSHI ZUO","2":"MI","3":"5.5","4":"7","5":"1655","6":"1501"},{"1":"HANSEN SONG","2":"OH","3":"5.0","4":"7","5":"1686","6":"1519"},{"1":"GARY DEE SWATHELL","2":"MI","3":"5.0","4":"7","5":"1649","6":"1372"},{"1":"EZEKIEL HOUGHTON","2":"MI","3":"5.0","4":"7","5":"1641","6":"1468"},{"1":"STEFANO LEE","2":"ON","3":"5.0","4":"7","5":"1411","6":"1523"},{"1":"ANVIT RAO","2":"MI","3":"5.0","4":"7","5":"1365","6":"1554"},{"1":"CAMERON WILLIAM MC LEMAN","2":"MI","3":"4.5","4":"7","5":"1712","6":"1468"},{"1":"KENNETH J TACK","2":"MI","3":"4.5","4":"6","5":"1663","6":"1506"},{"1":"TORRANCE HENRY JR","2":"MI","3":"4.5","4":"7","5":"1666","6":"1498"},{"1":"BRADLEY SHAW","2":"MI","3":"4.5","4":"7","5":"1610","6":"1515"},{"1":"ZACHARY JAMES HOUGHTON","2":"MI","3":"4.5","4":"7","5":"1220","6":"1484"},{"1":"MIKE NIKITIN","2":"MI","3":"4.0","4":"5","5":"1604","6":"1386"},{"1":"RONALD GRZEGORCZYK","2":"MI","3":"4.0","4":"7","5":"1629","6":"1499"},{"1":"DAVID SUNDEEN","2":"MI","3":"4.0","4":"7","5":"1600","6":"1480"},{"1":"DIPANKAR ROY","2":"MI","3":"4.0","4":"7","5":"1564","6":"1426"},{"1":"JASON ZHENG","2":"MI","3":"4.0","4":"7","5":"1595","6":"1411"},{"1":"DINH DANG BUI","2":"ON","3":"4.0","4":"7","5":"1563","6":"1470"},{"1":"EUGENE L MCCLURE","2":"MI","3":"4.0","4":"6","5":"1555","6":"1300"},{"1":"ALAN BUI","2":"ON","3":"4.0","4":"7","5":"1363","6":"1214"},{"1":"MICHAEL R ALDRICH","2":"MI","3":"4.0","4":"7","5":"1229","6":"1357"},{"1":"LOREN SCHWIEBERT","2":"MI","3":"3.5","4":"7","5":"1745","6":"1363"},{"1":"MAX ZHU","2":"ON","3":"3.5","4":"7","5":"1579","6":"1507"},{"1":"GAURAV GIDWANI","2":"MI","3":"3.5","4":"6","5":"1552","6":"1222"},{"1":"SOFIA ADINA STANESCU-BELLU","2":"MI","3":"3.5","4":"7","5":"1507","6":"1522"},{"1":"CHIEDOZIE OKORIE","2":"MI","3":"3.5","4":"6","5":"1602","6":"1314"},{"1":"GEORGE AVERY JONES","2":"ON","3":"3.5","4":"7","5":"1522","6":"1144"},{"1":"RISHI SHETTY","2":"MI","3":"3.5","4":"7","5":"1494","6":"1260"},{"1":"JOSHUA PHILIP MATHEWS","2":"ON","3":"3.5","4":"7","5":"1441","6":"1379"},{"1":"JADE GE","2":"MI","3":"3.5","4":"7","5":"1449","6":"1277"},{"1":"MICHAEL JEFFERY THOMAS","2":"MI","3":"3.5","4":"7","5":"1399","6":"1375"},{"1":"JOSHUA DAVID LEE","2":"MI","3":"3.5","4":"7","5":"1438","6":"1150"},{"1":"SIDDHARTH JHA","2":"MI","3":"3.5","4":"6","5":"1355","6":"1388"},{"1":"AMIYATOSH PWNANANDAM","2":"MI","3":"3.5","4":"5","5":"980","6":"1385"},{"1":"BRIAN LIU","2":"MI","3":"3.0","4":"6","5":"1423","6":"1539"},{"1":"JOEL R HENDON","2":"MI","3":"3.0","4":"7","5":"1436","6":"1430"},{"1":"FOREST ZHANG","2":"MI","3":"3.0","4":"7","5":"1348","6":"1391"},{"1":"KYLE WILLIAM MURPHY","2":"MI","3":"3.0","4":"4","5":"1403","6":"1248"},{"1":"JARED GE","2":"MI","3":"3.0","4":"7","5":"1332","6":"1150"},{"1":"ROBERT GLEN VASEY","2":"MI","3":"3.0","4":"7","5":"1283","6":"1107"},{"1":"JUSTIN D SCHILLING","2":"MI","3":"3.0","4":"6","5":"1199","6":"1327"},{"1":"DEREK YAN","2":"MI","3":"3.0","4":"7","5":"1242","6":"1152"},{"1":"JACOB ALEXANDER LAVALLEY","2":"MI","3":"3.0","4":"7","5":"377","6":"1358"},{"1":"ERIC WRIGHT","2":"MI","3":"2.5","4":"7","5":"1362","6":"1392"},{"1":"DANIEL KHAIN","2":"MI","3":"2.5","4":"5","5":"1382","6":"1356"},{"1":"MICHAEL J MARTIN","2":"MI","3":"2.5","4":"5","5":"1291","6":"1286"},{"1":"SHIVAM JHA","2":"MI","3":"2.5","4":"6","5":"1056","6":"1296"},{"1":"TEJAS AYYAGARI","2":"MI","3":"2.5","4":"7","5":"1011","6":"1356"},{"1":"ETHAN GUO","2":"MI","3":"2.5","4":"7","5":"935","6":"1495"},{"1":"JOSE C YBARRA","2":"MI","3":"2.0","4":"3","5":"1393","6":"1345"},{"1":"LARRY HODGE","2":"MI","3":"2.0","4":"6","5":"1270","6":"1206"},{"1":"ALEX KONG","2":"MI","3":"2.0","4":"6","5":"1186","6":"1406"},{"1":"MARISA RICCI","2":"MI","3":"2.0","4":"5","5":"1153","6":"1414"},{"1":"MICHAEL LU","2":"MI","3":"2.0","4":"6","5":"1092","6":"1363"},{"1":"VIRAJ MOHILE","2":"MI","3":"2.0","4":"6","5":"917","6":"1391"},{"1":"SEAN M MC CORMICK","2":"MI","3":"2.0","4":"6","5":"853","6":"1319"},{"1":"JULIA SHEN","2":"MI","3":"1.5","4":"5","5":"967","6":"1330"},{"1":"JEZZEL FARKAS","2":"ON","3":"1.5","4":"7","5":"955","6":"1327"},{"1":"ASHWIN BALAJI","2":"MI","3":"1.0","4":"1","5":"1530","6":"1186"},{"1":"THOMAS JOSEPH HOSMER","2":"MI","3":"1.0","4":"5","5":"1175","6":"1350"},{"1":"BEN LI","2":"MI","3":"1.0","4":"7","5":"1163","6":"1263"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 
 ### Trim names
 
 While you can't tell from the above tibble, many of the player names actually have surrounding white spaces. We can remoe with stringr::str_trim
 
-```{r}
+
+```r
 final_data$name <- str_trim(final_data$name, side=c("both"))
 ```
 
@@ -268,7 +343,8 @@ The function used above was identified from the following sources:
 
 - https://chess.stackexchange.com/questions/18209/how-do-you-calculate-your-tournament-performance-rating
 
-```{r}
+
+```r
 final_data <- final_data %>% mutate(expected_total = 1/(10^((avg_oppo_score-pre_score)/400)+1) * number_of_games)
 ```
 
@@ -276,18 +352,26 @@ final_data <- final_data %>% mutate(expected_total = 1/(10^((avg_oppo_score-pre_
 
 Answer is Aditya Bajaj, who performed very well throughout this tournament. They won 6 out of 7 games, despite the fact that, on average, they were rated nearly 200 points below each of their opponents. 
 
-```{r}
+
+```r
 final_data %>%
   mutate(score_differential = total - expected_total) %>%
   arrange(desc(score_differential)) %>%
   .[1,c('name','pre_score','avg_oppo_score','total','expected_total','score_differential')]
 ```
 
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["name"],"name":[1],"type":["chr"],"align":["left"]},{"label":["pre_score"],"name":[2],"type":["int"],"align":["right"]},{"label":["avg_oppo_score"],"name":[3],"type":["int"],"align":["right"]},{"label":["total"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["expected_total"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["score_differential"],"name":[6],"type":["dbl"],"align":["right"]}],"data":[{"1":"ADITYA BAJAJ","2":"1384","3":"1564","4":"6","5":"1.833237","6":"4.166763","_rn_":"1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+
 # Generate a .CSV file and load values into SQL
 
 ### Generate a .CSV file
 
-```{r}
+
+```r
 write.table(final_data, sep=",", file = "/Users/alecmccabe/Desktop/Masters Program/DATA 607/masters_607/projects/project_1/chess_output.csv")
 ```
 
@@ -303,7 +387,8 @@ This ensures that if a participant has already been counted in previous tourname
 Alternatively, if there is a new participant, this function will ensure that their generated player_id does not match any existing ones.
 
 
-```{r}
+
+```r
 assign_player_ids <- function(insert_data, mydb) {
   names <- insert_data$name
   players_string <- str_c('"',str_trim(names,side=c("both")),'"',collapse=",")
@@ -338,7 +423,8 @@ assign_player_ids <- function(insert_data, mydb) {
 
 Because data_607.players is currently empty, each of the participants in this tournament will be provided with incremental ids, starting with 1 and ending at 64.
 
-```{r}
+
+```r
 final_data <-assign_player_ids(final_data,mydb)
 ```
 
@@ -346,8 +432,8 @@ final_data <-assign_player_ids(final_data,mydb)
 
 This function will load any new players, and their associated player_ids and state information into the data_607.players table.
 
-```{r collect SQL data}
 
+```r
 insert_players <- function(data, mydb){
   
   names <- final_data$name
@@ -375,14 +461,14 @@ insert_players <- function(data, mydb){
     
   }
 }
-
 ```
 
 ### Create a function to insert into the data_607.scores table 
 
 This function will load a player's performance data and metrics into the data_607.scores table. This function takes 'tournament_id' variable as input in addition to data and db_connection.
 
-```{r}
+
+```r
 insert_scores <- function(data, tournament_id, mydb){
   
   for (row in 1:nrow(final_data)){
@@ -405,12 +491,14 @@ insert_scores <- function(data, tournament_id, mydb){
 
 The insert_players function prints to the console each player's name that is added to the SQL data ("new players"). As we see below, everyone is added.
 
-```{r}
+
+```r
 insert_players(final_data, mydb)
 ```
 
 
-```{r}
+
+```r
 insert_scores(final_data,1, mydb)
 ```
 
@@ -418,7 +506,8 @@ insert_scores(final_data,1, mydb)
 
 'score_differential' will be defined as the difference between a player's expected total, and their actual total points.
 
-```{r}
+
+```r
 final_data <- final_data %>%
   mutate(score_differential = total - expected_total)
 ```
@@ -429,19 +518,25 @@ There is also an outlier identified, with a score_differential of 4.166. As we d
 
 Based on the data, one could make that claim that Aditya's performance was not a fluke, but rather an improper initial pre_score going into the tournament.
 
-```{r}
+
+```r
 final_data %>%
   ggplot(aes(x=score_differential)) +
   geom_boxplot()
 ```
 
+![](607_project_1_files/figure-html/unnamed-chunk-33-1.png)<!-- -->
+
 The histogram below confirms our claim that the score_difference distribution is gaussian, with a mean of zero and no apparant skew.
 
-```{r}
+
+```r
 final_data %>%
   ggplot(aes(x=score_differential)) +
   geom_histogram(binwidth = .5)
 ```
+
+![](607_project_1_files/figure-html/unnamed-chunk-34-1.png)<!-- -->
 
 # Test assign_player_ids inser_players functions
 
@@ -451,7 +546,8 @@ As an example, imagine that a second tournament includes all of the members of t
 
 If our functions work as expected, then the assign_player_id function will provide Johnny with the id 65, and the insert_players function will only insert Johhny (since the previous players are already contained in the SQL table)
 
-```{r}
+
+```r
 final_data <- add_row(final_data,
         name="Johnny Apple",
         state="OH",
@@ -464,15 +560,24 @@ final_data <- add_row(final_data,
 ```
 
 
-```{r}
+
+```r
 final_data <-assign_player_ids(final_data,mydb)
 ```
 
-```{r}
+
+```r
 final_data[final_data$name=="Johnny Apple",c('name','id')]
 ```
 
-```{r}
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["name"],"name":[1],"type":["chr"],"align":["left"]},{"label":["id"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"Johnny Apple","2":"65","_rn_":"65"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+
+
+```r
 insert_players(final_data, mydb)
 ```
 
