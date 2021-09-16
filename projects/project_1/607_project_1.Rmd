@@ -1,0 +1,308 @@
+---
+title: "607_project_1"
+author: "Alec"
+date: "9/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load data from website
+
+# load libraries
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+# establish connection to R
+
+
+```{r}
+library("RMySQL")
+```
+
+
+```{r connect to SQL database}
+mydb = dbConnect(MySQL(), user = 'root', dbname='data_607', host='localhost')
+```
+
+lapply(dbListConnections(dbDriver(drv = "MySQL")), dbDisconnect)
+
+# load data
+
+```{r}
+data <- read.table("chess_file.txt", sep="|",fill=TRUE)
+```
+
+# change column names
+
+```{r}
+column_names <- c("id","name","total","round_1","round_2","round_3","round_4",
+                  "round_5","round_6","round_7","delete")
+
+colnames(data) <- column_names
+```
+
+# initial formatting of dataframe
+
+```{r}
+data<- data %>% 
+        filter(str_detect(id, "[a-zA-z\\d]")) %>%
+        select(-delete)
+```
+
+# get state_data character vector
+
+```{r}
+state_data <- data$id
+state_data <- state_data[grepl("[A-Z]{2}",state_data)]
+state_data <- str_trim(state_data, side = c("both"))
+```
+
+# get pre_score data
+
+```{r}
+pre_score_data <- data$name
+
+data$id <- data$id %>%
+  str_trim(side=c("both"))
+
+pre_score_data <- data %>%
+  filter(str_detect(id,"[A-Z]{2}")) %>%
+  .$name
+
+pre_score_data <- pre_score_data %>% 
+              str_extract("R:[^\\d]*\\d*") %>% 
+              str_replace("R:","") %>% 
+              str_trim(side=c("both"))
+```
+
+# filter dataframe to only have rows with proper ids
+
+```{r}
+data <- data %>% 
+        filter(str_detect(id,"\\d"))
+```
+
+# add state and pre_score columns
+
+```{r}
+data$state <- state_data
+data$pre_score <- pre_score_data
+```
+
+# rearrange columns for clarity
+
+```{r}
+data <- data %>% select(name, state, pre_score, total, everything())
+```
+
+# convert pre_score into integer
+
+```{r}
+data$pre_score <- as.integer(data$pre_score)
+data$total <- as.integer(data$total)
+```
+
+
+# concatenate all round info for each player
+
+```{r}
+
+data <- data %>% mutate(oppo_ids = str_c(round_1,round_2,round_3,round_4,round_5,round_6,round_7))
+
+```
+
+# extract character vector of opponent ids from the concatenated string
+
+```{r}
+data$oppo_ids <- data$oppo_ids %>% 
+  str_replace_all("[A-Z]","") %>%
+  str_trim(side=c("both")) %>%
+  str_replace_all("\\s{2,}","|")
+
+data$oppo_ids <- data$oppo_ids %>% str_split("\\|")
+
+```
+
+
+# create function that takes oppo_id column and calculates average opponent pre_score
+
+```{r}
+get_avg_oppo_score <- function(id_data) {
+  temp_df <- data %>% 
+              filter(id %in% id_data) %>%
+              summarise(pre_score_mean = mean(pre_score, na.rm=TRUE))
+  
+  return(temp_df[,1])
+}
+```
+
+# test it out on the first example
+
+```{r}
+get_avg_oppo_score(c(39,21,18,14,7,12,4))
+```
+
+# apply function to entire dataframe, creating new column avg_oppo_score
+```{r}
+data$avg_oppo_score <- lapply(data$oppo_ids,FUN=get_avg_oppo_score)
+```
+
+# select only the data requested for the project
+
+```{r}
+final_data <- data %>%
+  select(name, state, total, pre_score, avg_oppo_score)
+```
+
+# round the avg_oppo_score 
+
+```{r}
+final_data$avg_oppo_score <- as.integer(lapply(final_data$avg_oppo_score,FUN=round))
+```
+
+# trim the name
+
+```{r}
+final_data$name <- str_trim(final_data$name, side=c("both"))
+```
+
+# create query to assign ids to players based on existing player ids in database. If new player name is detected, new ids are provided.
+
+
+```{r}
+assign_player_ids <- function(insert_data, mydb) {
+  names <- insert_data$name
+  players_string <- str_c('"',str_trim(names,side=c("both")),'"',collapse=",")
+  insert_data$id <- NA
+  query <- str_interp("SELECT player_name, id FROM data_607.players WHERE player_name in (${players_string})")
+  
+  select_data <- dbGetQuery(mydb, query)
+  
+  for (row in 1:nrow(select_data)) {
+    select_name <- select_data[row,"player_name"]
+    select_id <- select_data[row,"id"]
+    
+    insert_data <- within(insert_data, id[name == select_name] <- select_id)
+  }
+  
+  for (row in 1:nrow(insert_data)){
+    if (is.na(insert_data[row,]$id)) {
+      if (sum(!is.na(insert_data$id))>0) {
+        max_id <- max(insert_data$id, na.rm=TRUE) +1
+      } else {
+        max_id <- 1
+      }
+      insert_data[row,]$id <- max_id
+    }
+  }
+  
+  return(insert_data)
+}
+```
+
+# running id assignment
+
+```{r}
+final_data <-assign_player_ids(final_data,mydb)
+```
+
+## Create insert function to load available tournament players into the data_607.players table. Only adds new players
+
+```{r collect SQL data}
+
+insert_players <- function(data, mydb){
+  
+  names <- final_data$name
+  players_string <- str_c('"',str_trim(names,side=c("both")),'"',collapse=",")
+  query <- str_interp("SELECT player_name, id FROM data_607.players WHERE player_name in (${players_string})")
+  
+  select_data <- dbGetQuery(mydb, query)
+  
+  for (row in 1:nrow(final_data)){
+    id <- as.integer(final_data[row, "id"])
+    name <- str_trim(final_data[row, "name"], side=c("both"))
+    state <- str_trim(final_data[row, "state"], side=c("both"))
+    total <- final_data[row, "total"]
+    pre_score <- final_data[row, "pre_score"]
+    avg_opponent_score <- final_data[row, "avg_oppo_score"]
+  
+    insert_query <- str_interp('insert into data_607.players VALUES (${id},"${name}", "${state}")')
+    
+    if (name %in% select_data$player_name) {
+      next
+    } else {
+      print(name)
+      dbGetQuery(mydb, insert_query)
+    }
+    
+  }
+}
+
+```
+
+# create a function to insert into the data_607.scores table the various player scores obtained throughout the tournament
+
+```{r}
+insert_scores <- function(data, tournament_id, mydb){
+  
+  for (row in 1:nrow(final_data)){
+    id <- as.integer(final_data[row, "id"])
+    name <- str_trim(final_data[row, "name"], side=c("both"))
+    total <- final_data[row, "total"]
+    pre_score <- final_data[row, "pre_score"]
+    avg_opponent_score <- final_data[row, "avg_oppo_score"]
+  
+    insert_query <- str_interp('insert into scores VALUES (DEFAULT,${tournament_id},${id},${total},${pre_score},${avg_opponent_score})')
+    
+    dbGetQuery(mydb, insert_query)
+  }
+}
+```
+
+# insert into SQL table
+
+```{r}
+insert_players(final_data, mydb)
+```
+
+
+```{r}
+insert_scores(final_data,1, mydb)
+```
+
+# testing out feature where we add another player in a future tournament
+# the id generator will give it a new id, the lowest available id based on our sql talbe.
+#when we run the insert_player function, it should ignore the players we have in sql and only add the new player johnny apple
+
+```{r}
+final_data <- add_row(final_data,
+        name="Johnny Apple",
+        state="OH",
+        total=1234,
+        pre_score=1111,
+        avg_oppo_score=1245,
+        id=NA)
+```
+
+
+```{r}
+final_data <-assign_player_ids(final_data,mydb)
+```
+
+
+```{r}
+insert_players(final_data, mydb)
+```
+
+
+```{r}
+
+write.table(final_data, sep=",", file = "/Users/alecmccabe/Desktop/Masters Program/DATA 607/masters_607/projects/project_1/chess_output.csv")
+```
+
