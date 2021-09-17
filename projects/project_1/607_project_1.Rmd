@@ -4,13 +4,15 @@ author: "Alec McCabe"
 date: "9/12/2021"
 output:
   # use the below for pdf
-  pdf_document
+  #pdf_document
   # use the below for nice html
-  #prettydoc::html_pretty:
-    #theme: cosmo
-    #highlight: github
-    #keep_md: true
-    #df_print: paged
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    toc: true
+    toc_depth: 2
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -39,17 +41,13 @@ After processing and formatting the input data as per assignment instructions, w
 mydb = dbConnect(MySQL(), user = 'root', dbname='data_607', host='localhost')
 ```
 
+The below code will close all open SQL connections if run
+
+```{r eval=FALSE}
 lapply(dbListConnections(dbDriver(drv = "MySQL")), dbDisconnect)
-
-### Import data and inspect
-
-```{r}
-data = read.table("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_1/chess_file.txt", sep="|",fill=TRUE)
 ```
 
-```{r}
-head(data[,'V1'])
-```
+
 
 # Convert [input data] --> [desired assignment format]
 
@@ -65,6 +63,20 @@ This assignment's input data is a "|" delimited .txt file containing information
 
 - Average Pre Chess Rating of Opponents
 
+
+### Import data and inspect
+
+```{r}
+data = read.table("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_1/chess_file.txt", 
+                  sep="|",
+                  fill=TRUE
+                  )
+```
+
+```{r}
+data %>%
+  select(V1:V11)
+```
 
 ### Change column names
 
@@ -149,7 +161,8 @@ data$pre_score <- as.integer(pre_score_data)
 Using dply::select and everything() we can easily re-arrange our column values for easier reading.
 
 ```{r}
-data <- data %>% select(name, state, pre_score, total, everything())
+data <- data %>% 
+          select(name, state, pre_score, total, everything())
 ```
 
 ```{r}
@@ -216,7 +229,12 @@ data$avg_oppo_score <- lapply(data$oppo_ids,FUN=get_avg_oppo_score)
 We will need this later on for extra credit. Here we are counting how many games each player participated in.
 
 ```{r}
-data$number_of_games <- as.integer(lapply(lapply(data$oppo_ids, FUN=lengths),FUN=sum))
+data$number_of_games <- as.integer(
+  lapply(
+    lapply(data$oppo_ids,FUN=lengths),
+    FUN=sum
+    )
+  )
 ```
 
 ### Select only interesting columns
@@ -225,7 +243,13 @@ There are a few columns we don't need anymore such as all of the "round_" column
 
 ```{r}
 final_data <- data %>%
-  select(name, state, total, number_of_games, pre_score, avg_oppo_score)
+                select(name, 
+                       state,
+                       total, 
+                       number_of_games, 
+                       pre_score, 
+                       avg_oppo_score
+                       )
 ```
 
 ### Round avg_oppo_score (Average Opponent Score) and inspect
@@ -233,7 +257,9 @@ final_data <- data %>%
 Based on the description of this project, we will be rounding the values of avg_oppo_score with the round() function.
 
 ```{r}
-final_data$avg_oppo_score <- as.integer(lapply(final_data$avg_oppo_score,FUN=round))
+final_data$avg_oppo_score <- as.integer(
+  lapply(final_data$avg_oppo_score,FUN=round)
+  )
 ```
 
 ```{r}
@@ -255,12 +281,15 @@ In chess a player's "total score" for a game is determined by whether or not the
 The "expected score" for a player in one game can be represented as a modified probability that they will win, based on their pre_score relative to their opponent's pre_score.
 
 The following function can perform the required calculation:
-
-1/(10^(({oppo_Pre_score}-{pre_score})/400)+1)
+```{r eval=FALSE}
+1/(10^(({oppo_pre_score}-{pre_score})/400)+1)
+```
 
 Because have already computed averages for our opponent_pre_scores, we can modify the above equation as such:
 
+```{r eval=FALSE}
 1/(10^(({oppo_Pre_score}-{pre_score})/400)+1) * {number_of_games}
+```
 
 The function used above was identified from the following sources:
 
@@ -269,12 +298,15 @@ The function used above was identified from the following sources:
 - https://chess.stackexchange.com/questions/18209/how-do-you-calculate-your-tournament-performance-rating
 
 ```{r}
-final_data <- final_data %>% mutate(expected_total = 1/(10^((avg_oppo_score-pre_score)/400)+1) * number_of_games)
+final_data <- final_data %>% 
+                mutate(
+  expected_total = 1/(10^((avg_oppo_score-pre_score)/400)+1) * number_of_games
+  )
 ```
 
 ### EXTRA CREDIT: which player scored the most points relative to their expected score?
 
-Answer is Aditya Bajaj, who performed very well throughout this tournament. They won 6 out of 7 games, despite the fact that, on average, they were rated nearly 200 points below each of their opponents. 
+Answer is Aditya Bajaj, who performed very well throughout this tournament. In fact, Adtiya's total was more than 4.16 points above his expected total. He won 6 out of 7 games, despite the fact that, on average, he was rated nearly 200 points below each of his opponents. 
 
 ```{r}
 final_data %>%
@@ -292,7 +324,7 @@ write.table(final_data, sep=",", file = "/Users/alecmccabe/Desktop/Masters Progr
 ```
 
 
-### Create query to assign ids to players 
+### Create function to assign ids to players 
 
 The reason why I chose to include two tables in my SQL database was to allow for continued use of this script. When new tournaments happen, new players may participate.
 
@@ -423,27 +455,69 @@ final_data <- final_data %>%
   mutate(score_differential = total - expected_total)
 ```
 
-The below boxplot shows that median score_difference within the population is close to zero, and seemingly normally distributed. Roughly 50% of the population's score_difference is between -0.5 and 0.5. Tail values stretch from -2.5 (performed much worse than expected) all the way to 2.5 (performed much better than expected).
+
+The density plot below suggests that the score_difference distribution is nearly gaussian, with a mean centered around zero and only a slight right skew.
+
+
+```{r}
+final_data %>%
+  ggplot(aes(x=score_differential)) +
+  geom_density(
+    fill = "slateblue1",
+    color = "slategrey"
+    ) +
+  theme_grey()
+```
+
+The below boxplot also shows that score_difference distribution is centered around zero, and seemingly normally distributed. Roughly 50% of the population's score_difference is between -1 and 1. Tail values stretch from -2.5 (performed much worse than expected) all the way to 2.5 (performed much better than expected).
 
 There is also an outlier identified, with a score_differential of 4.166. As we discussed earlier, Aditya performed much better than expected.
 
-Based on the data, one could make that claim that Aditya's performance was not a fluke, but rather an improper initial pre_score going into the tournament.
+Based on the data, one could make that claim that Aditya's performance was not a fluke, but rather a result of an "inaccurate" initial pre_score going into the tournament.
 
 ```{r}
 final_data %>%
   ggplot(aes(x=score_differential)) +
-  geom_boxplot()
+  geom_boxplot(
+    color = "black",
+    fill="cadetblue2",
+    outlier.size=2,
+    outlier.colour="red"
+  ) +
+  theme_grey()
 ```
 
-The histogram below confirms our claim that the score_difference distribution is gaussian, with a mean of zero and no apparant skew.
+The concept of an "innacurate" pre_score is interesting. Let's see if there is any correlation between the absolute score_differential and a player's pre_score.
 
 ```{r}
 final_data %>%
-  ggplot(aes(x=score_differential)) +
-  geom_histogram(binwidth = .5)
+  mutate(
+    score_differential = abs(score_differential)
+  ) %>%
+  select(pre_score, score_differential) %>%
+  cor() %>%
+  .[1,2]
 ```
 
-# Test assign_player_ids inser_players functions
+There is a small but not insignificant correlation. The below graph illustrates the correlation between pre_score and score_differential. As pre_score goes up, the absolute score_differential goes down. This implies that players with higher pre_scores can place more faith in their expected_totals than players with low pre_scores.
+
+And intuitively, this makes sense. Many players have low pre_scores simply because they don't have as many tournament games played. Even Magnus Carlson was once lowly rated (though I doubt that lasted long).
+
+```{r}
+final_data %>%
+  mutate(
+    score_differential = abs(score_differential)
+  ) %>%
+  ggplot() +
+  geom_point(aes(x=pre_score, y=score_differential), 
+             position="jitter",
+             color = "purple") +
+  geom_smooth(aes(x=pre_score, y=score_differential),method='lm', formula=y~x)+
+  theme_grey()
+           
+```
+
+# Test functions "assign_player_ids" and "insert_players"
 
 Here we will make sure that the above functions work as expected when presented with new player data.
 
