@@ -72,6 +72,32 @@ The below code will close all open SQL connections if run
 lapply(dbListConnections(dbDriver(drv = "MySQL")), dbDisconnect)
 ```
 
+And here is the code to create the tables
+
+
+```sql
+
+CREATE TABLE data_607.players (
+  id int NOT NULL,
+  player_name varchar(100) NOT NULL,
+  player_state varchar(25) DEFAULT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE data_607.scores (
+  unique_id int AUTO_INCREMENT NOT NULL,
+  tournament_id int NOT NULL,
+  player_id int NOT NULL,
+  number_of_games int DEFAULT NULL,
+  total float DEFAULT NULL,
+  expected_total float DEFAULT NULL,
+  pre_score int DEFAULT NULL,
+  avg_opponent_score int DEFAULT NULL,
+  PRIMARY KEY (unique_id),
+  FOREIGN KEY (player_id) REFERENCES players(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+```
 
 
 # Convert [input data] --> [desired assignment format]
@@ -558,7 +584,7 @@ final_data %>%
   theme_grey()
 ```
 
-![](607_project_1_files/figure-html/unnamed-chunk-36-1.png)<!-- -->
+![](607_project_1_files/figure-html/unnamed-chunk-37-1.png)<!-- -->
 
 The below boxplot also shows that score_difference distribution is centered around zero, and seemingly normally distributed. Roughly 50% of the population's score_difference is between -1 and 1. Tail values stretch from -2.5 (performed much worse than expected) all the way to 2.5 (performed much better than expected).
 
@@ -579,7 +605,7 @@ final_data %>%
   theme_grey()
 ```
 
-![](607_project_1_files/figure-html/unnamed-chunk-37-1.png)<!-- -->
+![](607_project_1_files/figure-html/unnamed-chunk-38-1.png)<!-- -->
 
 The concept of an "innacurate" pre_score is interesting. Let's see if there is any correlation between the absolute score_differential and a player's pre_score.
 
@@ -602,6 +628,8 @@ There is a small but not insignificant correlation. The below graph illustrates 
 
 And intuitively, this makes sense. Many players have low pre_scores simply because they don't have as many tournament games played. Even Magnus Carlson was once lowly rated (though I doubt that lasted long).
 
+head(final_data)
+
 
 ```r
 final_data %>%
@@ -609,14 +637,14 @@ final_data %>%
     score_differential = abs(score_differential)
   ) %>%
   ggplot() +
-  geom_point(aes(x=pre_score, y=score_differential), 
-             position="jitter",
-             color = "purple") +
+  geom_point(aes(x=pre_score, y=score_differential, color=state), 
+             position="jitter") +
   geom_smooth(aes(x=pre_score, y=score_differential),method='lm', formula=y~x)+
   theme_grey()
 ```
 
-![](607_project_1_files/figure-html/unnamed-chunk-39-1.png)<!-- -->
+![](607_project_1_files/figure-html/unnamed-chunk-40-1.png)<!-- -->
+
 
 # Test functions "assign_player_ids" and "insert_players"
 

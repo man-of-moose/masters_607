@@ -4,15 +4,15 @@ author: "Alec McCabe"
 date: "9/12/2021"
 output:
   # use the below for pdf
-  #pdf_document
+  pdf_document
   # use the below for nice html
-  prettydoc::html_pretty:
-    theme: cosmo
-    highlight: github
-    keep_md: true
-    toc: true
-    toc_depth: 2
-    df_print: paged
+  #prettydoc::html_pretty:
+    #theme: cosmo
+    #highlight: github
+    #keep_md: true
+    #toc: true
+    #toc_depth: 2
+    #df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -47,6 +47,33 @@ The below code will close all open SQL connections if run
 lapply(dbListConnections(dbDriver(drv = "MySQL")), dbDisconnect)
 ```
 
+And here is the code to create the tables
+
+```{sql eval=FALSE}
+
+CREATE TABLE data_607.players (
+  id int NOT NULL,
+  player_name varchar(100) NOT NULL,
+  player_state varchar(25) DEFAULT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE data_607.scores (
+  unique_id int AUTO_INCREMENT NOT NULL,
+  tournament_id int NOT NULL,
+  player_id int NOT NULL,
+  number_of_games int DEFAULT NULL,
+  total float DEFAULT NULL,
+  expected_total float DEFAULT NULL,
+  pre_score int DEFAULT NULL,
+  avg_opponent_score int DEFAULT NULL,
+  PRIMARY KEY (unique_id),
+  FOREIGN KEY (player_id) REFERENCES players(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+
+```
 
 
 # Convert [input data] --> [desired assignment format]
@@ -74,8 +101,7 @@ data = read.table("https://raw.githubusercontent.com/man-of-moose/masters_607/ma
 ```
 
 ```{r}
-data %>%
-  select(V1:V11)
+head(data)
 ```
 
 ### Change column names
@@ -503,19 +529,21 @@ There is a small but not insignificant correlation. The below graph illustrates 
 
 And intuitively, this makes sense. Many players have low pre_scores simply because they don't have as many tournament games played. Even Magnus Carlson was once lowly rated (though I doubt that lasted long).
 
+head(final_data)
+
 ```{r}
 final_data %>%
   mutate(
     score_differential = abs(score_differential)
   ) %>%
   ggplot() +
-  geom_point(aes(x=pre_score, y=score_differential), 
-             position="jitter",
-             color = "purple") +
+  geom_point(aes(x=pre_score, y=score_differential, color=state), 
+             position="jitter") +
   geom_smooth(aes(x=pre_score, y=score_differential),method='lm', formula=y~x)+
   theme_grey()
            
 ```
+
 
 # Test functions "assign_player_ids" and "insert_players"
 
