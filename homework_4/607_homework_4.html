@@ -191,7 +191,7 @@ a.sourceLine {
 </div>
 <div id="reading-and-cleaning-data" class="section level1">
 <h1>Reading and Cleaning Data</h1>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>il_vax <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;efficacy_data_clean.csv&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>il_vax <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_4/efficacy_data_clean.csv&quot;</span>)</span></code></pre></div>
 <pre><code>## New names:
 ## * `` -&gt; ...3
 ## * `` -&gt; ...5</code></pre>
@@ -309,7 +309,6 @@ a.sourceLine {
 {"columns":[{"label":["age"],"name":[1],"type":["chr"],"align":["left"]},{"label":["vax_status"],"name":[2],"type":["chr"],"align":["left"]},{"label":["pop_count"],"name":[3],"type":["int"],"align":["right"]},{"label":["age_pop_percent"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["severe_count"],"name":[5],"type":["int"],"align":["right"]},{"label":["severe_count_prop"],"name":[6],"type":["dbl"],"align":["right"]}],"data":[{"1":"<50","2":"not_vax","3":"1116834","4":"0.233","5":"43","6":"3.850169e-05"},{"1":">50","2":"not_vax","3":"186078","4":"0.079","5":"171","6":"9.189695e-04"},{"1":"<50","2":"vax","3":"3501118","4":"0.730","5":"11","6":"3.141854e-06"},{"1":">50","2":"vax","3":"2133516","4":"0.904","5":"290","6":"1.359259e-04"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<p>sum(il_vax$pop_count)</p>
 </div>
 </div>
 <div id="questions" class="section level1">

@@ -47,7 +47,7 @@ library(stringr)
 # Reading and Cleaning Data
 
 ```{r}
-il_vax <- read_csv("efficacy_data_clean.csv")
+il_vax <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_4/efficacy_data_clean.csv")
 ```
 
 ### Inspect the table
@@ -168,8 +168,6 @@ il_vax <- left_join(il_vax,vac_percentages,by=c("age","vax_status")) %>%
 ```{r}
 il_vax
 ```
-
-sum(il_vax$pop_count)
 
 # Questions
 

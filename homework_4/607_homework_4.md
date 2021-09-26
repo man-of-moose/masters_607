@@ -67,7 +67,7 @@ library(stringr)
 
 
 ```r
-il_vax <- read_csv("efficacy_data_clean.csv")
+il_vax <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_4/efficacy_data_clean.csv")
 ```
 
 ```
@@ -271,8 +271,6 @@ il_vax
 {"columns":[{"label":["age"],"name":[1],"type":["chr"],"align":["left"]},{"label":["vax_status"],"name":[2],"type":["chr"],"align":["left"]},{"label":["pop_count"],"name":[3],"type":["int"],"align":["right"]},{"label":["age_pop_percent"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["severe_count"],"name":[5],"type":["int"],"align":["right"]},{"label":["severe_count_prop"],"name":[6],"type":["dbl"],"align":["right"]}],"data":[{"1":"<50","2":"not_vax","3":"1116834","4":"0.233","5":"43","6":"3.850169e-05"},{"1":">50","2":"not_vax","3":"186078","4":"0.079","5":"171","6":"9.189695e-04"},{"1":"<50","2":"vax","3":"3501118","4":"0.730","5":"11","6":"3.141854e-06"},{"1":">50","2":"vax","3":"2133516","4":"0.904","5":"290","6":"1.359259e-04"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-
-sum(il_vax$pop_count)
 
 # Questions
 
