@@ -1,0 +1,365 @@
+---
+title: "Analyzing Champion Stats in League of Legends"
+author: "Alec"
+date: "10/3/2021"
+output: 
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    toc: true
+    toc_depth: 2
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Discussion Board Title: Analyzing Champion Stats in League of Legends
+
+Dataset: https://ddragon.leagueoflegends.com/cdn/11.19.1/data/en_US/champion.json
+
+Provided by: Santiago Torres
+
+Suggested Prompt: "For all champions, figure out who has the highest starting hp for each tag category."
+
+
+# Load Libaries
+
+Load all required libraris into the evironment. For this dataset, we will be using json packages rjson and jsonlite for json parsing
+
+```{r}
+library(rjson)
+library(tidyverse)
+library(stringr)
+library(jsonlite)
+```
+
+# Load Data
+
+Data is hosted on ddragon.leagueoflegends.com. We can use rjson::fromJSON to read and parse directly from the URL.
+
+fromJSON will return a nested list structure containing all of the available json data
+
+```{r}
+champion_json <- rjson::fromJSON(file="https://ddragon.leagueoflegends.com/cdn/11.19.1/data/en_US/champion.json")
+```
+
+# Data Tidying
+
+The first step in my tidy process will be to convert the champion_json list object into a "long" dataframe, containing the key-value pairs for all json elements
+
+```{r}
+unlisted_json <- enframe(unlist(champion_json))
+```
+
+As you can see below, every unique nested json element is notated using subsequent "."s.
+
+```{r}
+head(unlisted_json, 15)
+```
+
+### What is the longest json object?
+
+In order to create a "Hadley approved" long dataset, we will need to create enw columns to capture all of the nested json elements. In order to know how many columns to create, we need to know what the longest nested item is.
+
+```{r}
+dot_split_regex <- "\\."
+
+
+n_cols_max <-
+  unlisted_json %>%
+  pull(name) %>%
+  str_split(dot_split_regex) %>%
+  map_dbl(~length(.)) %>%
+  max()
+
+n_cols_max
+```
+
+### Use separate() function to split out the name column
+
+separate() will split the name column into multiple columns based on the "." split. For items that do not have as many splits as n_cols_max, NA's will be introduced for the new columns
+
+```{r}
+split_champion_list <- unlisted_json %>% separate(name, into = c(paste0("x", 1:n_cols_max)),fill="right")
+```
+
+```{r}
+head(split_champion_list,10)
+```
+  
+
+### Get vectors for all interesting data points.
+
+Below are all of the data points that we want to capture into vectors. The vectors should all be the same length, assuming that all champions have the same set of nested datapoints.
+
+Following this assumption, it was discovered that not all data points are included for all champions! "tags" are not available for every champion, so for those items we will need a different approach.
+
+1. name
+2. title
+3. blurb
+4. tags***
+4. stats
+  a. hp
+  b. hpperlevel
+  c. mp
+  d. mpperlevel
+  e. movespeed
+  f. armor
+  g. armorperlevel
+  h. spellblock
+  i. spellblockperlevel
+  j. attackrange
+  k. hpregen
+  l. hpregenperlevel
+  m. mpregen
+  n. mpregenperlevel
+  o.crit
+  p. critperlevel
+  q. attackdamage
+  
+
+```{r}
+champ_names <- split_champion_list %>%
+  filter(x3 == "name") %>%
+  select(value)
+```
+
+```{r}
+champ_title <- split_champion_list %>%
+  filter(x3 == "title") %>%
+  select(value)
+```
+
+```{r}
+champ_blurb <- split_champion_list %>%
+  filter(x3 == "blurb") %>%
+  select(value)
+```
+
+```{r}
+champ_hp <- split_champion_list %>%
+  filter(x4 == "hp") %>%
+  select(value)
+```
+
+```{r}
+champ_hpperlevel <- split_champion_list %>%
+  filter(x4 == "hpperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_mp <- split_champion_list %>%
+  filter(x4 == "mp") %>%
+  select(value)
+```
+
+```{r}
+champ_mpperlevel <- split_champion_list %>%
+  filter(x4 == "mpperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_movespeed <- split_champion_list %>%
+  filter(x4 == "movespeed") %>%
+  select(value)
+```
+
+```{r}
+champ_armor <- split_champion_list %>%
+  filter(x4 == "armor") %>%
+  select(value)
+```
+
+```{r}
+champ_armorperlevel <- split_champion_list %>%
+  filter(x4 == "armorperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_spellblock <- split_champion_list %>%
+  filter(x4 == "spellblock") %>%
+  select(value)
+```
+
+```{r}
+champ_spellblockperlevel <- split_champion_list %>%
+  filter(x4 == "spellblockperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_attackrange <- split_champion_list %>%
+  filter(x4 == "attackrange") %>%
+  select(value)
+```
+
+```{r}
+champ_hpregen <- split_champion_list %>%
+  filter(x4 == "hpregen") %>%
+  select(value)
+```
+
+```{r}
+champ_hpregenperlevel <- split_champion_list %>%
+  filter(x4 == "hpregenperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_mpregen <- split_champion_list %>%
+  filter(x4 == "mpregen") %>%
+  select(value)
+```
+
+```{r}
+champ_mpregenperlevel <- split_champion_list %>%
+  filter(x4 == "mpregenperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_crit <- split_champion_list %>%
+  filter(x4 == "crit") %>%
+  select(value)
+```
+
+```{r}
+champ_critperlevel <- split_champion_list %>%
+  filter(x4 == "critperlevel") %>%
+  select(value)
+```
+
+```{r}
+champ_attackdamage <- split_champion_list %>%
+  filter(x4 == "attackdamage") %>%
+  select(value)
+```
+  
+### Combine into one dataframe
+
+We will combine all of the above generated vectors into the champ_names tibble. Note that we have still not addressed the problem with "tags".
+
+```{r}
+champs_tidy <- champ_names %>%
+  mutate(
+    title = pull(champ_title, value),
+    blurb = pull(champ_blurb, value),
+    hp = pull(champ_hp, value),
+    hpperlevel = pull(champ_hpperlevel, value),
+    mp = pull(champ_mp, value),
+    mpperlevel = pull(champ_mpperlevel, value),
+    movespeed = pull(champ_movespeed, value),
+    armor = pull(champ_armor, value),
+    armorperlevel = pull(champ_armorperlevel, value),
+    spellblock = pull(champ_spellblock, value),
+    spellblockperlevel = pull(champ_spellblockperlevel, value),
+    attackrange = pull(champ_attackrange, value),
+    hpregen = pull(champ_hpregen, value),
+    hpregenperlevel = pull(champ_hpregenperlevel, value),
+    mpregen = pull(champ_mpregen, value),
+    mpregenperlevel = pull(champ_mpregenperlevel, value),
+    crit = pull(champ_crit, value),
+    critperlevel = pull(champ_critperlevel, value),
+    attackdamage = pull(champ_attackdamage, value)
+  )
+```
+
+### Get Tags data
+
+Because some of the champions do not have tags listed, we need to create a special function to grab them
+
+```{r}
+get_tags1 <- function(champion_name) {
+  a <- character(0)
+  
+  ret <- split_champion_list %>%
+          filter(x2 == champion_name, x3 == "tags1") %>%
+          pull(value)
+  
+  if (identical(a, ret)) {
+    return("None")
+  }
+  
+  return(unlist(ret))
+}
+```
+
+```{r}
+get_tags2 <- function(champion_name) {
+  a <- character(0)
+  
+  ret <- split_champion_list %>%
+          filter(x2 == champion_name, x3 == "tags2") %>%
+          pull(value)
+  
+  if (identical(a, ret)) {
+    return("None")
+  }
+  
+  return(unlist(ret))
+}
+```
+
+Now we are ready to use the above function to get correct tag vectors
+
+```{r}
+tags1 <- champs_tidy$value %>% lapply(FUN=get_tags1) %>% unlist()
+```
+
+```{r}
+tags2 <- champs_tidy$value %>% lapply(FUN=get_tags2) %>% unlist()
+```
+
+And now we can add these vectors back into the champ_names dataframe
+
+```{r}
+champs_tidy$tags1 <- tags1
+```
+
+```{r}
+champs_tidy$tags2 <- tags2
+```
+
+According to the poster's question, it appears that separating the tags items is not valuable for this analysis, and instead they should be concatenated.
+
+```{r}
+champs_tidy <- champs_tidy %>%
+  mutate(
+    tag_category = str_c(tags1," ",tags2)
+  )
+```
+
+```{r}
+champs_tidy <- champs_tidy %>%
+  select(value, title, blurb, tag_category, everything(), -tags1, -tags2) %>%
+  rename(name = value)
+```
+
+### View Tiday Data!
+
+After all of the above steps, we now have a long dataset.
+
+```{r}
+head(champs_tidy, 5)
+```
+
+# Answer the Original Prompt:
+
+Here we will be answering the original prompt, which is to determine which champions have the highest starting HP per category.
+
+```{r}
+champs_tidy %>%
+  group_by(tag_category) %>%
+  top_n(1, hp) %>%
+  select(tag_category, name, hp)
+```
+
+

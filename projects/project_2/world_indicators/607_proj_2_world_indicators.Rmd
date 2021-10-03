@@ -1,0 +1,318 @@
+---
+title: "Global Speech Freedom"
+author: "Alec"
+date: "10/3/2021"
+output: 
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    toc: true
+    toc_depth: 2
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Discussion Board Title: World Government Indicators
+
+Dataset: https://info.worldbank.org/governance/wgi/Home/downLoadFile?fileName=wgidataset.xlsx
+
+Provided by: Thomas Buonora 
+
+Suggested Prompt: None provided, will perform self-exploration around 2 questions: What countries have the lowest Voice and Accountability ratings today? What countries had the greatest drop in Voice and Accountability ratings since they began tracking for that country?
+
+# Load Libraries
+
+We will be using tidyverse and stringr packages for this exercise.
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+# Load Data
+
+For this assignment we will focus on the first worksheet in the downloadable excel workbook: "VoiceandAccountability"
+
+```{r}
+data <- read_csv("free_speech_indicators.csv")
+```
+
+Viewing the raw data, it is evident that this is in a troublesome "wide" format. The data is grouped horizontally by year, but includes multiple measurements per group (estimate, stderr, numsrc, rank, lower, upper). Because of this, a simple gather() will not suffice.
+
+```{r}
+head(data)
+```
+Based on the above data, it is apparent that both the column names, and the values in row 1 should are indicative of true column values. To remedy this, we will rename the columns to contain the concatenated strings of colnames() and row 1.
+
+```{r}
+colnames(data) <- str_c(colnames(data),data[1,])
+```
+
+We can now drop row 1 from the table.
+
+```{r}
+data <- data[-1,]
+```
+
+Looking at the data now, we can see that each column (starting at column 3) contains both the year and the measurement type for that column.
+
+```{r}
+head(data)
+```
+### Split data into 6 tibbles corresponding to measurement type
+
+In order to fully convert this to long format, without losing data, we will need to split the data into tables representing each of the individual measurements. Then for each of these, we will convert to long format using gather() on the data columns.
+
+```{r}
+estimate_data <- data %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Estimate")
+  )
+```
+
+View the below table to get a visualization for what we're doing here. The returned table includes the country and code columns, as well as every column which pertains the "Estimate" mesasurements.
+
+```{r}
+head(estimate_data)
+```
+Here we do the same for stderr
+
+```{r}
+stderr_data <- data %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("StdErr")
+  )
+```
+
+Here we do the same for numsrc
+
+```{r}
+numsrc_data <- data %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("NumSrc")
+  )
+```
+
+Here we do the same for rank
+
+```{r}
+rank_data <- data %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Rank")
+  )
+```
+
+Here we do the same for lower
+
+```{r}
+lower_data <- data %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Lower")
+  )
+```
+
+Here we do the same for upper
+
+```{r}
+upper_data <- data %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Upper")
+  )
+```
+
+### create function to rename year columns
+
+Now that we've split the original data up, we need to begin cleaning up the column names so that we can use gather(). Function should take a string vector as input, and return a year if regex year is detected, otherwise return provided
+
+```{r}
+parse_year <- function(col_value) {
+  regex <- "\\d{4}"
+  extracted <- str_extract(col_value, regex)
+  
+  if (is.na(extracted)) {
+    return(col_value)
+  }
+  return(extracted)
+}
+```
+
+### Rename all colnames for all tables
+
+```{r}
+colnames(estimate_data) <- colnames(estimate_data) %>% lapply(parse_year) %>% unlist()
+```
+
+Let's take a look at the first table transformation to see what's happening
+
+```{r}
+head(estimate_data)
+```
+As we can see above, this is the same estimate_data table that we viewed earlier, only now the year columns contain only year values!
+
+Let's do the same for the rest of the tibbles.
+
+```{r}
+colnames(stderr_data) <- colnames(stderr_data) %>% lapply(parse_year) %>% unlist()
+```
+
+```{r}
+colnames(numsrc_data) <- colnames(numsrc_data) %>% lapply(parse_year) %>% unlist()
+```
+
+```{r}
+colnames(rank_data) <- colnames(rank_data) %>% lapply(parse_year) %>% unlist()
+```
+
+```{r}
+colnames(lower_data) <- colnames(lower_data) %>% lapply(parse_year) %>% unlist()
+```
+
+```{r}
+colnames(upper_data) <- colnames(upper_data) %>% lapply(parse_year) %>% unlist()
+```
+
+### Use gather() on all tibbles to convert wide format to long format
+
+Now we are ready to use gather() to convert each of the previously created tibbles into long format.
+
+```{r}
+estimate_data <- estimate_data %>%
+  gather("year","estimate",3:24)
+```
+
+```{r}
+stderr_data <- stderr_data %>%
+  gather("year","stderr",3:24)
+```
+
+```{r}
+numsrc_data <- numsrc_data %>%
+  gather("year","numsrc",3:24)
+```
+
+```{r}
+rank_data <- rank_data %>%
+  gather("year","rank",3:24)
+```
+
+```{r}
+lower_data <- lower_data %>%
+  gather("year","lower",3:24)
+```
+
+```{r}
+upper_data <- upper_data %>%
+  gather("year","upper",3:24)
+```
+
+### Add all gathered values into original dataframe
+
+Finally, we can conbine all of the newly gathered value columns into the first tibble created.
+
+```{r}
+estimate_data$stderr = stderr_data$stderr
+estimate_data$numsrc = numsrc_data$numsrc
+estimate_data$rank = rank_data$rank
+estimate_data$lower = lower_data$lower
+estimate_data$upper = upper_data$upper
+```
+
+And finally, we can convert all of the measurement columns to double.
+
+```{r}
+estimate_data[,3:8] <- sapply(estimate_data[,3:8],as.double)
+```
+
+# Questions
+
+### What countries currently have the worst Voice and Accountability ratings
+
+North Korea, Eritrea, Turkmenistan, Syria, Equatorial Guinea, South Sudan, Somalia, Lao PDR, Tajikistan and Yemen have the lowest Voice and Accountablilty ratings among all included countries.
+
+```{r}
+estimate_data %>%
+  filter(year == 2020) %>%
+  arrange(estimate) %>%
+  select(country, estimate) %>%
+  head(10)
+  
+```
+
+### Which countries had the greatest drops in free_speech scores across all years?
+
+Create a new tibble containing unique country names
+
+```{r}
+countries_data <- as_tibble(unique(estimate_data$country))
+```
+
+Create function that collects all country estimate entries, then calculates the difference between the first non-na entry and the last non-na entry
+
+```{r}
+get_total_change <- function(country_name){
+  values_vector <- estimate_data %>%
+                    filter(country==country_name) %>%
+                    pull(estimate) %>%
+                    .[!is.na(.)]
+  
+  return(tail(values_vector, n=1) - values_vector[1])
+}
+
+```
+
+test out the function
+
+```{r}
+get_total_change("Zimbabwe")
+```
+
+Apply the function to the countries tibble
+
+```{r}
+countries_data$growth_ratio <- countries_data$value %>% lapply(get_total_change) %>% unlist()
+```
+
+View the distribution of newly created growth_ratio column
+
+```{r}
+countries_data %>%
+  ggplot() +
+  geom_boxplot(aes(x=growth_ratio))
+```
+
+```{r}
+countries_data %>%
+  arrange(growth_ratio)
+```
+
+

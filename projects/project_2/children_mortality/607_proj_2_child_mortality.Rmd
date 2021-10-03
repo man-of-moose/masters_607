@@ -1,0 +1,134 @@
+---
+title: "Child Mortality Analysis"
+author: "Alec"
+date: "10/3/2021"
+output: 
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    toc: true
+    toc_depth: 2
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Discussion Board Title: Global Child Mortality Rates
+
+Dataset: https://sejdemyr.github.io/r-tutorials/basics/data/RatesDeaths_AllIndicators.xlsx
+
+Provided by: Alec McCabe
+
+Suggested Prompt: "What 10 countries have the highest under-5 mortality rates today? For the 10 worst countries, visualize the under-5 mortality trend over time. Comparatively, what does the trend for G7 countries look like over time?
+
+# Load Libraries
+
+For this task, we will be using the tidyverse and stringr libraries
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+# Load Data
+
+Input data has been cleaned (overview and instructions removed from csv) and loaded into a new csv titled child_mortality.csv
+
+```{r}
+input_data <- read_csv("child_mortality.csv")
+```
+
+### Capture only under-5 mortality rate
+
+This dataset includes information for under-5 mortality rate, infant mortality rate, neonatal mortality rate, and number of deaths. For our analysis, we will be focusing on under-5 mortality.
+
+```{r}
+under_5_mortality <- input_data %>%
+  rename(iso_code = `ISO Code`, country = CountryName, measurement = `Uncertainty bounds*`) %>%
+  select(iso_code, country, measurement, contains("U5MR"))
+```
+
+### Use gather() to convert into long format. We will use gather() on the year column to create new key-value columns "year" and "value"
+
+```{r}
+under_5_mortality <- under_5_mortality %>%
+  gather("year","value",contains("U5MR")) %>%
+  mutate(
+    year = as.integer(str_replace(year, "U5MR.",""))
+  ) %>%
+  filter(measurement == "Median") %>%
+  select(-measurement)
+```
+
+Looking at the data below, we now have a "long" dataframe which includes a single column designating the year for each country observation. Notice below that there are many NA values, presumably because not all countries had tracking begin at the same time. 
+
+```{r}
+head(under_5_mortality, n=10)
+```
+
+# Answer the Original Prompts:
+
+### Which countries have the highest recentl (2015) rate of under-5 mortality?
+
+Angola, Chad, Somalia, Central African Republic, Seirra Leone, Mali, Nigeria, Benin, Congo DR, Niger had the highest under-5 mortality rates based in 2015. It should be noted that all of these countries are in Africa.
+
+```{r}
+under_5_mortality %>%
+  filter(year==max(year)) %>%
+  arrange(desc(value)) %>%
+  head(10)
+```
+### Visualize the under-5 mortality trend for the 10 worst countries
+
+Collect the names of the countries shown above into a character vector
+
+```{r}
+worst_countries <- under_5_mortality %>%
+  filter(year==max(year)) %>%
+  arrange(desc(value)) %>%
+  head(10) %>%
+  .$country
+```
+
+Create a new dataframe to hold these worst countries, using filter() and %in% to match against the "worst_countries" character vector.
+
+```{r}
+under_5_mortality_worst <- under_5_mortality %>%
+  filter(
+    country %in% worst_countries
+  )
+```
+
+Despite the fact that these countries have the worst 2015 under-5 mortality rates, it is evident that they have exhibited improvement (dropped rates) over time. Their improvement is roughly linear.
+
+```{r}
+under_5_mortality_worst %>%
+  ggplot(mapping=aes(x=year, y=value, color=country)) +
+  geom_line()
+```
+
+
+### What does the trend for G7 countries look like?
+
+We expect that the under-5 mortality rates for G7 countries to be lower than that of the worst countries, but how will the trend differ?
+
+```{r}
+under_5_mortality_g7 <- under_5_mortality %>%
+  filter(
+    country %in% c("Canada", "United States of America","France","Germany","Italy","Japan","United Kingdom")
+  )
+```
+
+Based on the below line graph, it is evident that under-5 child mortality rates have been steadily decreasing over the years for G7 countries. Unlike the trend for mortality rates in the "worst countries" group, this downward trend is not linear.
+
+```{r}
+under_5_mortality_g7 %>%
+  ggplot(mapping=aes(x=year, y=value, color=country)) +
+  geom_line()
+```
+
