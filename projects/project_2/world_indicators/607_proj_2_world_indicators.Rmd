@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 ```
 
 # Introduction
@@ -24,7 +24,7 @@ Dataset: https://info.worldbank.org/governance/wgi/Home/downLoadFile?fileName=wg
 
 Provided by: Thomas Buonora 
 
-Suggested Prompt: None provided, will perform self-exploration around 2 questions: What countries have the lowest Voice and Accountability ratings today? What countries had the greatest drop in Voice and Accountability ratings since they began tracking for that country?
+Suggested Prompt: None provided, will perform self-exploration around 2 questions: What countries have the lowest Voice and Accountability ratings today? What countries had the greatest drop in Voice and Accountability ratings since they began tracking for that country? What countries had the greatest increase in Voice and Accountability ratings since they began tracking for that country?
 
 # Load Libraries
 
@@ -35,24 +35,28 @@ library(tidyverse)
 library(stringr)
 ```
 
+
 # Load Data
 
 For this assignment we will focus on the first worksheet in the downloadable excel workbook: "VoiceandAccountability"
 
 ```{r}
-data <- read_csv("free_speech_indicators.csv")
+data <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/free_speech_indicators.csv")
 ```
+
 
 Viewing the raw data, it is evident that this is in a troublesome "wide" format. The data is grouped horizontally by year, but includes multiple measurements per group (estimate, stderr, numsrc, rank, lower, upper). Because of this, a simple gather() will not suffice.
 
 ```{r}
 head(data)
 ```
+
 Based on the above data, it is apparent that both the column names, and the values in row 1 should are indicative of true column values. To remedy this, we will rename the columns to contain the concatenated strings of colnames() and row 1.
 
 ```{r}
 colnames(data) <- str_c(colnames(data),data[1,])
 ```
+
 
 We can now drop row 1 from the table.
 
@@ -60,11 +64,13 @@ We can now drop row 1 from the table.
 data <- data[-1,]
 ```
 
+
 Looking at the data now, we can see that each column (starting at column 3) contains both the year and the measurement type for that column.
 
 ```{r}
 head(data)
 ```
+
 ### Split data into 6 tibbles corresponding to measurement type
 
 In order to fully convert this to long format, without losing data, we will need to split the data into tables representing each of the individual measurements. Then for each of these, we will convert to long format using gather() on the data columns.
@@ -80,11 +86,13 @@ estimate_data <- data %>%
   )
 ```
 
+
 View the below table to get a visualization for what we're doing here. The returned table includes the country and code columns, as well as every column which pertains the "Estimate" mesasurements.
 
 ```{r}
 head(estimate_data)
 ```
+
 Here we do the same for stderr
 
 ```{r}
@@ -97,6 +105,7 @@ stderr_data <- data %>%
     country, code, contains("StdErr")
   )
 ```
+
 
 Here we do the same for numsrc
 
@@ -111,6 +120,7 @@ numsrc_data <- data %>%
   )
 ```
 
+
 Here we do the same for rank
 
 ```{r}
@@ -123,6 +133,7 @@ rank_data <- data %>%
     country, code, contains("Rank")
   )
 ```
+
 
 Here we do the same for lower
 
@@ -137,6 +148,7 @@ lower_data <- data %>%
   )
 ```
 
+
 Here we do the same for upper
 
 ```{r}
@@ -149,6 +161,7 @@ upper_data <- data %>%
     country, code, contains("Upper")
   )
 ```
+
 
 ### create function to rename year columns
 
@@ -166,17 +179,20 @@ parse_year <- function(col_value) {
 }
 ```
 
+
 ### Rename all colnames for all tables
 
 ```{r}
 colnames(estimate_data) <- colnames(estimate_data) %>% lapply(parse_year) %>% unlist()
 ```
 
+
 Let's take a look at the first table transformation to see what's happening
 
 ```{r}
 head(estimate_data)
 ```
+
 As we can see above, this is the same estimate_data table that we viewed earlier, only now the year columns contain only year values!
 
 Let's do the same for the rest of the tibbles.
@@ -200,6 +216,7 @@ colnames(lower_data) <- colnames(lower_data) %>% lapply(parse_year) %>% unlist()
 ```{r}
 colnames(upper_data) <- colnames(upper_data) %>% lapply(parse_year) %>% unlist()
 ```
+
 
 ### Use gather() on all tibbles to convert wide format to long format
 
@@ -235,6 +252,7 @@ upper_data <- upper_data %>%
   gather("year","upper",3:24)
 ```
 
+
 ### Add all gathered values into original dataframe
 
 Finally, we can conbine all of the newly gathered value columns into the first tibble created.
@@ -247,11 +265,13 @@ estimate_data$lower = lower_data$lower
 estimate_data$upper = upper_data$upper
 ```
 
+
 And finally, we can convert all of the measurement columns to double.
 
 ```{r}
 estimate_data[,3:8] <- sapply(estimate_data[,3:8],as.double)
 ```
+
 
 # Questions
 
@@ -276,6 +296,7 @@ Create a new tibble containing unique country names
 countries_data <- as_tibble(unique(estimate_data$country))
 ```
 
+
 Create function that collects all country estimate entries, then calculates the difference between the first non-na entry and the last non-na entry
 
 ```{r}
@@ -290,29 +311,44 @@ get_total_change <- function(country_name){
 
 ```
 
-test out the function
+
+Test out the function
 
 ```{r}
 get_total_change("Zimbabwe")
 ```
 
+
 Apply the function to the countries tibble
 
 ```{r}
-countries_data$growth_ratio <- countries_data$value %>% lapply(get_total_change) %>% unlist()
+countries_data$ratings_difference <- countries_data$value %>% lapply(get_total_change) %>% unlist()
 ```
 
-View the distribution of newly created growth_ratio column
+
+The below boxplot reveals a lot of interesting trends in the dataset:
+
+1. Most of the countries in the dataset did not see their Voice and Accountablity ratings change much (+/- 0.3) across all years measured.
+
+2. The median is below zero, which suggests that most countries actually decreased in ratings throughout the years!
 
 ```{r}
 countries_data %>%
   ggplot() +
-  geom_boxplot(aes(x=growth_ratio))
+  geom_boxplot(aes(x=ratings_difference))
 ```
+
+Who are the worst countries in terms of ratings change over time?
 
 ```{r}
 countries_data %>%
-  arrange(growth_ratio)
+  arrange(ratings_difference)
 ```
 
+Who are the best countries in terms of ratings change over time?
+
+```{r}
+countries_data %>%
+  arrange(desc(ratings_difference))
+```
 

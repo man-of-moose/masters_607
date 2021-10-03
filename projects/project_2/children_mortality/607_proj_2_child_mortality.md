@@ -60,7 +60,7 @@ Input data has been cleaned (overview and instructions removed from csv) and loa
 
 
 ```r
-input_data <- read_csv("child_mortality.csv")
+input_data <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/children_mortality/child_mortality.csv")
 ```
 
 ```
@@ -120,7 +120,7 @@ head(under_5_mortality, n=10)
 
 # Answer the Original Prompts:
 
-### Which countries have the highest recentl (2015) rate of under-5 mortality?
+### Which countries have the highest recent (2015) rate of under-5 mortality?
 
 Angola, Chad, Somalia, Central African Republic, Seirra Leone, Mali, Nigeria, Benin, Congo DR, Niger had the highest under-5 mortality rates based in 2015. It should be noted that all of these countries are in Africa.
 

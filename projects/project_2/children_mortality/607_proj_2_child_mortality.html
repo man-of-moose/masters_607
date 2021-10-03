@@ -172,7 +172,7 @@ a.sourceLine {
 <div id="load-data" class="section level1">
 <h1>Load Data</h1>
 <p>Input data has been cleaned (overview and instructions removed from csv) and loaded into a new csv titled child_mortality.csv</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>input_data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;child_mortality.csv&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>input_data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/children_mortality/child_mortality.csv&quot;</span>)</span></code></pre></div>
 <pre><code>## Rows: 585 Columns: 399</code></pre>
 <pre><code>## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -209,8 +209,8 @@ a.sourceLine {
 </div>
 <div id="answer-the-original-prompts" class="section level1">
 <h1>Answer the Original Prompts:</h1>
-<div id="which-countries-have-the-highest-recentl-2015-rate-of-under-5-mortality" class="section level3">
-<h3>Which countries have the highest recentl (2015) rate of under-5 mortality?</h3>
+<div id="which-countries-have-the-highest-recent-2015-rate-of-under-5-mortality" class="section level3">
+<h3>Which countries have the highest recent (2015) rate of under-5 mortality?</h3>
 <p>Angola, Chad, Somalia, Central African Republic, Seirra Leone, Mali, Nigeria, Benin, Congo DR, Niger had the highest under-5 mortality rates based in 2015. It should be noted that all of these countries are in Africa.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>under_5_mortality <span class="sc">%&gt;%</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year<span class="sc">==</span><span class="fu">max</span>(year)) <span class="sc">%&gt;%</span></span>
