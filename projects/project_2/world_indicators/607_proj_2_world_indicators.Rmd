@@ -24,7 +24,7 @@ Dataset: https://info.worldbank.org/governance/wgi/Home/downLoadFile?fileName=wg
 
 Provided by: Thomas Buonora 
 
-Suggested Prompt: None provided, will perform self-exploration around 2 questions: What countries have the lowest Voice and Accountability ratings today? What countries had the greatest drop in Voice and Accountability ratings since they began tracking for that country? What countries had the greatest increase in Voice and Accountability ratings since they began tracking for that country?
+Suggested Prompt: None provided, will perform self-exploration around these questions: What countries have the lowest Voice and Accountability ratings today? What countries had the greatest drop in Voice and Accountability ratings since they began tracking for that country? What rating types are most correlated?
 
 # Load Libraries
 
@@ -33,50 +33,119 @@ We will be using tidyverse and stringr packages for this exercise.
 ```{r}
 library(tidyverse)
 library(stringr)
+library(corrr)
+library(corrplot)
 ```
 
 
 # Load Data
 
-For this assignment we will focus on the first worksheet in the downloadable excel workbook: "VoiceandAccountability"
+This assignment will tidy and concatenate datasets from 2 different csvs. One covers Voice and Accountability ratings for countries, while the other covers Political Stability ratings for countries. 
 
 ```{r}
-data <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/free_speech_indicators.csv")
+voice_ratings <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/free_speech_indicators.csv")
+```
+
+```{r}
+stability_ratings <- read_csv("political_stability.csv")
 ```
 
 
-Viewing the raw data, it is evident that this is in a troublesome "wide" format. The data is grouped horizontally by year, but includes multiple measurements per group (estimate, stderr, numsrc, rank, lower, upper). Because of this, a simple gather() will not suffice.
-
 ```{r}
-head(data)
+regulator_quality <- read_csv("regulator_quality.csv")
 ```
 
-Based on the above data, it is apparent that both the column names, and the values in row 1 should are indicative of true column values. To remedy this, we will rename the columns to contain the concatenated strings of colnames() and row 1.
+```{r}
+control_of_corruption <- read_csv("control_of_corruption.csv")
+```
 
 ```{r}
-colnames(data) <- str_c(colnames(data),data[1,])
+government_effectiveness <- read_csv("government_effectiveness.csv")
 ```
 
 
-We can now drop row 1 from the table.
-
 ```{r}
-data <- data[-1,]
+rule_of_law <- read_csv("rule_of_law.csv")
 ```
 
+
+Viewing the raw data for voice_ratings, it is evident that this is in a troublesome "wide" format. The data is grouped horizontally by year, but includes multiple measurements per group (estimate, stderr, numsrc, rank, lower, upper). Because of this, a simple gather() will not suffice.
+
+Because we will be analyzing multiple ratings per country, we will focus only on capturing the year data for "Estimate" column, which corresponds to the rating per year, based on the dataset.
+
+
+```{r}
+head(voice_ratings)
+```
+
+**As a note, all other input dataframes are of the same structure as voice_ratings.**
+
+Based on the above data, it is apparent that both the column names, and the values in row 1 both contribute to the real column values. To be clear, the current column names (starting at column 3) provide information for the year, while row 1 (starting at column 3) classify the column's datapoints as "Estimate", "StdError","NumSrc","Rank","Lower","Upper". 
+
+To remedy this, we will rename the columns to contain the concatenated strings of colnames() and row 1.
+
+```{r}
+colnames(voice_ratings) <- str_c(colnames(voice_ratings),voice_ratings[1,])
+```
+
+```{r}
+colnames(stability_ratings) <- str_c(colnames(stability_ratings),stability_ratings[1,])
+```
+
+```{r}
+colnames(control_of_corruption) <- str_c(colnames(control_of_corruption),control_of_corruption[1,])
+```
+
+```{r}
+colnames(rule_of_law) <- str_c(colnames(rule_of_law),rule_of_law[1,])
+```
+
+```{r}
+colnames(regulator_quality) <- str_c(colnames(regulator_quality),regulator_quality[1,])
+```
+
+```{r}
+colnames(government_effectiveness) <- str_c(colnames(government_effectiveness),government_effectiveness[1,])
+```
+
+We can now drop row 1 from the tables.
+
+```{r}
+control_of_corruption <- control_of_corruption[-1,]
+```
+
+```{r}
+government_effectiveness <- government_effectiveness[-1,]
+```
+
+```{r}
+regulator_quality <- regulator_quality[-1,]
+```
+
+```{r}
+rule_of_law <- rule_of_law[-1,]
+```
+
+```{r}
+stability_ratings <- stability_ratings[-1,]
+```
+
+```{r}
+voice_ratings <- voice_ratings[-1,]
+```
 
 Looking at the data now, we can see that each column (starting at column 3) contains both the year and the measurement type for that column.
 
 ```{r}
-head(data)
+head(voice_ratings)
 ```
 
-### Split data into 6 tibbles corresponding to measurement type
+### Selecr estimate column for each dataset
 
-In order to fully convert this to long format, without losing data, we will need to split the data into tables representing each of the individual measurements. Then for each of these, we will convert to long format using gather() on the data columns.
+Here we will select the "estimate" column for each dataframe, which hold the relevant rankings for each dataset.
 
 ```{r}
-estimate_data <- data %>%
+control_of_corruption <- control_of_corruption %>%
   rename(
     country = `...1Country/Territory`,
     code = `...2Code`
@@ -86,82 +155,66 @@ estimate_data <- data %>%
   )
 ```
 
+```{r}
+government_effectiveness <- government_effectiveness %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Estimate")
+  )
+```
+
+```{r}
+regulator_quality <- regulator_quality %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Estimate")
+  )
+```
+
+```{r}
+rule_of_law <- rule_of_law %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Estimate")
+  )
+```
+
+```{r}
+stability_ratings <- stability_ratings %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Estimate")
+  )
+```
+
+```{r}
+voice_ratings <- voice_ratings %>%
+  rename(
+    country = `...1Country/Territory`,
+    code = `...2Code`
+    ) %>%
+  select(
+    country, code, contains("Estimate")
+  )
+```
 
 View the below table to get a visualization for what we're doing here. The returned table includes the country and code columns, as well as every column which pertains the "Estimate" mesasurements.
 
 ```{r}
-head(estimate_data)
+head(voice_ratings)
 ```
-
-Here we do the same for stderr
-
-```{r}
-stderr_data <- data %>%
-  rename(
-    country = `...1Country/Territory`,
-    code = `...2Code`
-    ) %>%
-  select(
-    country, code, contains("StdErr")
-  )
-```
-
-
-Here we do the same for numsrc
-
-```{r}
-numsrc_data <- data %>%
-  rename(
-    country = `...1Country/Territory`,
-    code = `...2Code`
-    ) %>%
-  select(
-    country, code, contains("NumSrc")
-  )
-```
-
-
-Here we do the same for rank
-
-```{r}
-rank_data <- data %>%
-  rename(
-    country = `...1Country/Territory`,
-    code = `...2Code`
-    ) %>%
-  select(
-    country, code, contains("Rank")
-  )
-```
-
-
-Here we do the same for lower
-
-```{r}
-lower_data <- data %>%
-  rename(
-    country = `...1Country/Territory`,
-    code = `...2Code`
-    ) %>%
-  select(
-    country, code, contains("Lower")
-  )
-```
-
-
-Here we do the same for upper
-
-```{r}
-upper_data <- data %>%
-  rename(
-    country = `...1Country/Territory`,
-    code = `...2Code`
-    ) %>%
-  select(
-    country, code, contains("Upper")
-  )
-```
-
 
 ### create function to rename year columns
 
@@ -183,38 +236,35 @@ parse_year <- function(col_value) {
 ### Rename all colnames for all tables
 
 ```{r}
-colnames(estimate_data) <- colnames(estimate_data) %>% lapply(parse_year) %>% unlist()
+colnames(voice_ratings) <- colnames(voice_ratings) %>% lapply(parse_year) %>% unlist()
 ```
-
 
 Let's take a look at the first table transformation to see what's happening
 
 ```{r}
-head(estimate_data)
+head(voice_ratings)
 ```
 
 As we can see above, this is the same estimate_data table that we viewed earlier, only now the year columns contain only year values!
 
-Let's do the same for the rest of the tibbles.
-
 ```{r}
-colnames(stderr_data) <- colnames(stderr_data) %>% lapply(parse_year) %>% unlist()
+colnames(stability_ratings) <- colnames(stability_ratings) %>% lapply(parse_year) %>% unlist()
 ```
 
 ```{r}
-colnames(numsrc_data) <- colnames(numsrc_data) %>% lapply(parse_year) %>% unlist()
+colnames(control_of_corruption) <- colnames(control_of_corruption) %>% lapply(parse_year) %>% unlist()
 ```
 
 ```{r}
-colnames(rank_data) <- colnames(rank_data) %>% lapply(parse_year) %>% unlist()
+colnames(government_effectiveness) <- colnames(government_effectiveness) %>% lapply(parse_year) %>% unlist()
 ```
 
 ```{r}
-colnames(lower_data) <- colnames(lower_data) %>% lapply(parse_year) %>% unlist()
+colnames(regulator_quality) <- colnames(regulator_quality) %>% lapply(parse_year) %>% unlist()
 ```
 
 ```{r}
-colnames(upper_data) <- colnames(upper_data) %>% lapply(parse_year) %>% unlist()
+colnames(rule_of_law) <- colnames(rule_of_law) %>% lapply(parse_year) %>% unlist()
 ```
 
 
@@ -223,55 +273,60 @@ colnames(upper_data) <- colnames(upper_data) %>% lapply(parse_year) %>% unlist()
 Now we are ready to use gather() to convert each of the previously created tibbles into long format.
 
 ```{r}
-estimate_data <- estimate_data %>%
-  gather("year","estimate",3:24)
+voice_ratings <- voice_ratings %>%
+  gather("year","voice_rating",3:24)
 ```
 
 ```{r}
-stderr_data <- stderr_data %>%
-  gather("year","stderr",3:24)
+stability_ratings <- stability_ratings %>%
+  gather("year","stability_rating",3:24)
 ```
 
 ```{r}
-numsrc_data <- numsrc_data %>%
-  gather("year","numsrc",3:24)
+control_of_corruption <- control_of_corruption %>%
+  gather("year","control_corr_rating",3:24)
 ```
 
 ```{r}
-rank_data <- rank_data %>%
-  gather("year","rank",3:24)
+government_effectiveness <- government_effectiveness %>%
+  gather("year","gov_rating",3:24)
 ```
 
 ```{r}
-lower_data <- lower_data %>%
-  gather("year","lower",3:24)
+regulator_quality <- regulator_quality %>%
+  gather("year","regulator_rating",3:24)
 ```
 
 ```{r}
-upper_data <- upper_data %>%
-  gather("year","upper",3:24)
+rule_of_law <- rule_of_law %>%
+  gather("year","rule_of_law_rating",3:24)
 ```
-
 
 ### Add all gathered values into original dataframe
 
-Finally, we can conbine all of the newly gathered value columns into the first tibble created.
+Finally, we can use a chained inner_join to merge all of the datasets back into one, "long" formatted dataframe.
 
 ```{r}
-estimate_data$stderr = stderr_data$stderr
-estimate_data$numsrc = numsrc_data$numsrc
-estimate_data$rank = rank_data$rank
-estimate_data$lower = lower_data$lower
-estimate_data$upper = upper_data$upper
+final_data <- voice_ratings %>%
+  inner_join(stability_ratings,by=c("country","code","year")) %>%
+  inner_join(control_of_corruption,by=c("country","code","year")) %>%
+  inner_join(government_effectiveness,by=c("country","code","year")) %>%
+  inner_join(regulator_quality,by=c("country","code","year")) %>%
+  inner_join(rule_of_law,by=c("country","code","year"))
 ```
 
 
 And finally, we can convert all of the measurement columns to double.
 
 ```{r}
-estimate_data[,3:8] <- sapply(estimate_data[,3:8],as.double)
+final_data[,3:9] <- sapply(final_data[,3:9],as.double)
 ```
 
+Below is the original data in "long" format.
+
+```{r}
+final_data
+```
 
 # Questions
 
@@ -280,10 +335,10 @@ estimate_data[,3:8] <- sapply(estimate_data[,3:8],as.double)
 North Korea, Eritrea, Turkmenistan, Syria, Equatorial Guinea, South Sudan, Somalia, Lao PDR, Tajikistan and Yemen have the lowest Voice and Accountablilty ratings among all included countries.
 
 ```{r}
-estimate_data %>%
+final_data %>%
   filter(year == 2020) %>%
-  arrange(estimate) %>%
-  select(country, estimate) %>%
+  arrange(voice_rating) %>%
+  select(country, voice_rating) %>%
   head(10)
   
 ```
@@ -293,7 +348,7 @@ estimate_data %>%
 Create a new tibble containing unique country names
 
 ```{r}
-countries_data <- as_tibble(unique(estimate_data$country))
+countries_data <- as_tibble(unique(final_data$country))
 ```
 
 
@@ -301,9 +356,9 @@ Create function that collects all country estimate entries, then calculates the 
 
 ```{r}
 get_total_change <- function(country_name){
-  values_vector <- estimate_data %>%
+  values_vector <- final_data %>%
                     filter(country==country_name) %>%
-                    pull(estimate) %>%
+                    pull(voice_rating) %>%
                     .[!is.na(.)]
   
   return(tail(values_vector, n=1) - values_vector[1])
@@ -312,7 +367,23 @@ get_total_change <- function(country_name){
 ```
 
 
-Test out the function
+Test out the function on Zimbabwe.
+
+In 1996, Zimbabwe had a Voice and Accountability ranking of -0.61. In 2020, their ranking had dropped to -1.12 (decrease of 0.51)
+
+```{r}
+final_data %>%
+  filter(country=="Zimbabwe" & year %in% c(1996, 2020))
+```
+
+```{r}
+zimbabwe_1996_and_2020_estimates <- final_data %>%
+  filter(country=="Zimbabwe" & year %in% c(1996, 2020)) %>%
+  .$voice_rating
+
+zimbabwe_1996_and_2020_estimates[2] - zimbabwe_1996_and_2020_estimates[1]
+```
+
 
 ```{r}
 get_total_change("Zimbabwe")
@@ -326,17 +397,17 @@ countries_data$ratings_difference <- countries_data$value %>% lapply(get_total_c
 ```
 
 
-The below boxplot reveals a lot of interesting trends in the dataset:
-
-1. Most of the countries in the dataset did not see their Voice and Accountablity ratings change much (+/- 0.3) across all years measured.
-
-2. The median is below zero, which suggests that most countries actually decreased in ratings throughout the years!
-
 ```{r}
 countries_data %>%
   ggplot() +
   geom_boxplot(aes(x=ratings_difference))
 ```
+
+The above boxplot reveals a lot of interesting trends in the dataset:
+
+1. Most of the countries in the dataset did not see their Voice and Accountablity ratings change much (+/- 0.3) across all years measured.
+
+2. The median is below zero, which suggests that most countries actually decreased in ratings throughout the years!
 
 Who are the worst countries in terms of ratings change over time?
 
@@ -345,10 +416,23 @@ countries_data %>%
   arrange(ratings_difference)
 ```
 
-Who are the best countries in terms of ratings change over time?
+### Are any of the Indicators correlated?
+
+All of these ratings are highly correlated. In other words, it is likely that a country with high ratings for one category have higher ratings in other categories as well.
+
+Notably, control_of_corruption and rule_of_law are the most highly correlated.
 
 ```{r}
-countries_data %>%
-  arrange(desc(ratings_difference))
+final_data %>%
+  select(is.numeric, -year) %>%
+  cor(use="complete.obs")
+```
+
+
+```{r}
+final_data %>%
+  select(is.numeric, -year) %>%
+  cor(use="complete.obs") %>%
+  corrplot()
 ```
 
