@@ -63,194 +63,47 @@ library(corrplot)
 
 # Load Data
 
-This assignment will tidy and concatenate datasets from 2 different csvs. One covers Voice and Accountability ratings for countries, while the other covers Political Stability ratings for countries. 
+This assignment will tidy and concatenate 6 global ratings datasets:
+
+- Voice and Accountability Ratings
+- Political Stability Ratings
+- Control of Corruption Ratings
+- Government Effectiveness Ratings
+- Regulator Quality Ratings
+- Rule of Law Ratings
+
+These ratings are standardized between -2.5 (poor rating) and 2.5 (positive rating). 
 
 
 ```r
 voice_ratings <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/free_speech_indicators.csv")
 ```
 
-```
-## New names:
-## * `` -> ...1
-## * `` -> ...2
-## * `1996` -> `1996...3`
-## * `1996` -> `1996...4`
-## * `1996` -> `1996...5`
-## * ...
-```
-
-```
-## Rows: 215 Columns: 134
-```
-
-```
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (134): ...1, ...2, 1996...3, 1996...4, 1996...5, 1996...6, 1996...7, 199...
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-```
-
 
 ```r
-stability_ratings <- read_csv("political_stability.csv")
-```
-
-```
-## New names:
-## * `` -> ...1
-## * `` -> ...2
-## * `1996` -> `1996...3`
-## * `1996` -> `1996...4`
-## * `1996` -> `1996...5`
-## * ...
-```
-
-```
-## Rows: 215 Columns: 134
-```
-
-```
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (134): ...1, ...2, 1996...3, 1996...4, 1996...5, 1996...6, 1996...7, 199...
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+stability_ratings <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/political_stability.csv")
 ```
 
 
 
 ```r
-regulator_quality <- read_csv("regulator_quality.csv")
-```
-
-```
-## New names:
-## * `` -> ...1
-## * `` -> ...2
-## * `1996` -> `1996...3`
-## * `1996` -> `1996...4`
-## * `1996` -> `1996...5`
-## * ...
-```
-
-```
-## Rows: 215 Columns: 134
-```
-
-```
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (134): ...1, ...2, 1996...3, 1996...4, 1996...5, 1996...6, 1996...7, 199...
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+regulator_quality <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/regulator_quality.csv")
 ```
 
 
 ```r
-control_of_corruption <- read_csv("control_of_corruption.csv")
-```
-
-```
-## New names:
-## * `` -> ...1
-## * `` -> ...2
-## * `1996` -> `1996...3`
-## * `1996` -> `1996...4`
-## * `1996` -> `1996...5`
-## * ...
-```
-
-```
-## Rows: 215 Columns: 134
-```
-
-```
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (134): ...1, ...2, 1996...3, 1996...4, 1996...5, 1996...6, 1996...7, 199...
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+control_of_corruption <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/control_of_corruption.csv")
 ```
 
 
 ```r
-government_effectiveness <- read_csv("government_effectiveness.csv")
-```
-
-```
-## New names:
-## * `` -> ...1
-## * `` -> ...2
-## * `1996` -> `1996...3`
-## * `1996` -> `1996...4`
-## * `1996` -> `1996...5`
-## * ...
-```
-
-```
-## Rows: 215 Columns: 134
-```
-
-```
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (134): ...1, ...2, 1996...3, 1996...4, 1996...5, 1996...6, 1996...7, 199...
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+government_effectiveness <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/government_effectiveness.csv")
 ```
 
 
 
 ```r
-rule_of_law <- read_csv("rule_of_law.csv")
-```
-
-```
-## New names:
-## * `` -> ...1
-## * `` -> ...2
-## * `1996` -> `1996...3`
-## * `1996` -> `1996...4`
-## * `1996` -> `1996...5`
-## * ...
-```
-
-```
-## Rows: 215 Columns: 134
-```
-
-```
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (134): ...1, ...2, 1996...3, 1996...4, 1996...5, 1996...6, 1996...7, 199...
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+rule_of_law <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/world_indicators/rule_of_law.csv")
 ```
 
 
