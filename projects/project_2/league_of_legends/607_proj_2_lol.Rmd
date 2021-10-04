@@ -99,28 +99,27 @@ Below are all of the data points that we want to capture into vectors. The vecto
 
 Following this assumption, it was discovered that not all data points are included for all champions! "tags" are not available for every champion, so for those items we will need a different approach.
 
-1. name
-2. title
-3. blurb
-4. tags***
-4. stats
-  a. hp
-  b. hpperlevel
-  c. mp
-  d. mpperlevel
-  e. movespeed
-  f. armor
-  g. armorperlevel
-  h. spellblock
-  i. spellblockperlevel
-  j. attackrange
-  k. hpregen
-  l. hpregenperlevel
-  m. mpregen
-  n. mpregenperlevel
-  o.crit
-  p. critperlevel
-  q. attackdamage
+- name
+- title
+- blurb
+- tags***
+-- hp
+-- hpperlevel
+-- mp
+-- mpperlevel
+--  movespeed
+--  armor
+--  armorperlevel
+--  spellblock
+--  spellblockperlevel
+--  attackrange
+--  hpregen
+--  hpregenperlevel
+--  mpregen
+--  mpregenperlevel
+-- crit
+--  critperlevel
+--  attackdamage
   
 
 ```{r}

@@ -1,5 +1,5 @@
 ---
-title: "Global Speech Freedom"
+title: "World Health Indicators"
 author: "Alec"
 date: "10/3/2021"
 output: 

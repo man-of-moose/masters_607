@@ -228,31 +228,12 @@ a.sourceLine {
 <h3>Get vectors for all interesting data points.</h3>
 <p>Below are all of the data points that we want to capture into vectors. The vectors should all be the same length, assuming that all champions have the same set of nested datapoints.</p>
 <p>Following this assumption, it was discovered that not all data points are included for all champions! “tags” are not available for every champion, so for those items we will need a different approach.</p>
-<ol style="list-style-type: decimal">
+<ul>
 <li>name</li>
 <li>title</li>
 <li>blurb</li>
-<li>tags***</li>
-<li>stats</li>
-</ol>
-<ol style="list-style-type: lower-alpha">
-<li>hp</li>
-<li>hpperlevel</li>
-<li>mp</li>
-<li>mpperlevel</li>
-<li>movespeed</li>
-<li>armor</li>
-<li>armorperlevel</li>
-<li>spellblock</li>
-<li>spellblockperlevel</li>
-<li>attackrange</li>
-<li>hpregen</li>
-<li>hpregenperlevel</li>
-<li>mpregen</li>
-<li>mpregenperlevel o.crit</li>
-<li>critperlevel</li>
-<li>attackdamage</li>
-</ol>
+<li>tags*** – hp – hpperlevel – mp – mpperlevel – movespeed – armor – armorperlevel – spellblock – spellblockperlevel – attackrange – hpregen – hpregenperlevel – mpregen – mpregenperlevel – crit – critperlevel – attackdamage</li>
+</ul>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>champ_names <span class="ot">&lt;-</span> split_champion_list <span class="sc">%&gt;%</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(x3 <span class="sc">==</span> <span class="st">&quot;name&quot;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(value)</span></code></pre></div>

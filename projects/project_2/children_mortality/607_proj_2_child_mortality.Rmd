@@ -33,13 +33,14 @@ For this task, we will be using the tidyverse and stringr libraries
 ```{r}
 library(tidyverse)
 library(stringr)
+library(visdat)
 ```
 
 # Load Data
 
 Input data has been cleaned (overview and instructions removed from csv) and loaded into a new csv titled child_mortality.csv
 
-```{r}
+```{r message=FALSE}
 input_data <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/project_2/children_mortality/child_mortality.csv")
 ```
 
@@ -52,6 +53,13 @@ under_5_mortality <- input_data %>%
   rename(iso_code = `ISO Code`, country = CountryName, measurement = `Uncertainty bounds*`) %>%
   select(iso_code, country, measurement, contains("U5MR"))
 ```
+
+Viewing the data below, we can see that the earlier years tend to have more NA values.
+
+```{r}
+head(under_5_mortality)
+```
+
 
 ### Use gather() to convert into long format. We will use gather() on the year column to create new key-value columns "year" and "value"
 
