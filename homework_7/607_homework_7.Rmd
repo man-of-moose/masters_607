@@ -16,11 +16,13 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r messages=FALSE}
 library(tidyverse)
 library(stringr)
 library(XML)
 library(jsonlite)
+library(RCurl)
+library(xml2)
 ```
 
 
@@ -66,11 +68,10 @@ Sample HTML code using html-table below:
 ### Load HTML into dataframe
 
 ```{r}
-parsed_html_table <- XML::htmlParse("books.html")
 
-html_books_df <- XML::readHTMLTable(parsed_html_table)
+html_data <- RCurl::getURLContent("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_7/books.html")
 
-html_books_df <- html_books_df[[1]]
+html_books_df <- XML::readHTMLTable(html_data)[[1]]
 ```
 
 
@@ -119,9 +120,11 @@ Sample XML code:
 ### Load HTML into dataframe
 
 ```{r}
-parsed_xml_table <- XML::xmlParse("books.xml")
+xml_data <- getURL("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_7/books.xml")
 
-xml_books_df <- XML::xmlToDataFrame(parsed_xml_table)
+xml_books_df <- xmlParse(xml_data)
+
+xml_books_df <- xmlToDataFrame(xml_books_df)
 ```
 
 
@@ -168,7 +171,7 @@ Sample JSON code:
 ### Load JSON into dataframe
 
 ```{r}
-json_books_df <- jsonlite::fromJSON("books.json")$books
+json_books_df <- jsonlite::fromJSON("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_7/books.json")$books
 ```
 
 ```{r}

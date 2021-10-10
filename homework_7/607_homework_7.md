@@ -53,6 +53,25 @@ library(jsonlite)
 ##     flatten
 ```
 
+```r
+library(RCurl)
+```
+
+```
+## 
+## Attaching package: 'RCurl'
+```
+
+```
+## The following object is masked from 'package:tidyr':
+## 
+##     complete
+```
+
+```r
+library(xml2)
+```
+
 
 # Part 1 - Pick Books
 
@@ -103,11 +122,9 @@ Sample HTML code using html-table below:
 
 
 ```r
-parsed_html_table <- XML::htmlParse("books.html")
+html_data <- RCurl::getURLContent("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_7/books.html")
 
-html_books_df <- XML::readHTMLTable(parsed_html_table)
-
-html_books_df <- html_books_df[[1]]
+html_books_df <- XML::readHTMLTable(html_data)[[1]]
 ```
 
 
@@ -163,9 +180,11 @@ Sample XML code:
 
 
 ```r
-parsed_xml_table <- XML::xmlParse("books.xml")
+xml_data <- getURL("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_7/books.xml")
 
-xml_books_df <- XML::xmlToDataFrame(parsed_xml_table)
+xml_books_df <- xmlParse(xml_data)
+
+xml_books_df <- xmlToDataFrame(xml_books_df)
 ```
 
 
@@ -219,7 +238,7 @@ Sample JSON code:
 
 
 ```r
-json_books_df <- jsonlite::fromJSON("books.json")$books
+json_books_df <- jsonlite::fromJSON("https://raw.githubusercontent.com/man-of-moose/masters_607/main/homework_7/books.json")$books
 ```
 
 
