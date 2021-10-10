@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<books>
+    <book id="1">
+        <title>Good Omens</title>
+        <author>Neil Gaiman, Terry Pratchett</author>
+        <publish_date>2019</publish_date>
+        <num_pages>288</num_pages>
+        <goodreads_rating>4.2</goodreads_rating>
+        <num_ratings>608,611</num_ratings>
+    </book>
+    <book id="2">
+        <title>The Shadow Over Innsmouth</title>
+        <author>HP Lovecraft</author>
+        <publish_date>1936</publish_date>
+        <num_pages>64</num_pages>
+        <goodreads_rating>4.1</goodreads_rating>
+        <num_ratings>13,810</num_ratings>
+    </book>
+    <book id="3">
+        <title>At The Mountain of Madness</title>
+        <author>HP Lovecraft</author>
+        <publish_date>1936</publish_date>
+        <num_pages>102</num_pages>
+        <goodreads_rating>3.9</goodreads_rating>
+        <num_ratings>39,758</num_ratings>
+    </book>
+</books>

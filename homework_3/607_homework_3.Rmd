@@ -243,4 +243,5 @@ example <- c("eleven","bananana","mount sinai")
 str_extract(example, pattern)
 ```
 
+pnorm(.6666666666) - pnorm(-.6666666666)
 

@@ -1,0 +1,26 @@
+{"books" :[
+    {
+    "title" : "Good Omens",
+    "author" : "Neil Gaiman, Terry Pratchett",
+    "publish_date" : 2019,
+    "num_pages" : 288,
+    "goodreads_rating" : 4.2,
+    "num_ratings" : 608611
+    },
+    {
+    "title" : "The Shadow Over Innsmouth",
+    "author" : "HP Lovecraft",
+    "publish_date" : 1936,
+    "num_pages" : 64,
+    "goodreads_rating" : 4.1,
+    "num_ratings" : 13810
+    },
+    {
+    "title" : "At The Mountain of Madness",
+    "author" : "HP Lovecraft",
+    "publish_date" : 1936,
+    "num_pages" : 102,
+    "goodreads_rating" : 3.9,
+    "num_ratings" : 39758
+    }]
+}
