@@ -1,0 +1,76 @@
+---
+title: "607_homework_9"
+author: "Alec"
+date: "10/24/2021"
+output: 
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    toc: true
+    toc_depth: 2
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load libraries
+
+```{r}
+library(jsonlite)
+library(tidyverse)
+library(stringr)
+```
+
+
+## Connecting to API
+
+```{r}
+key <- "APHySXOpNOGSc10kLBVm8ZdVljlRIRlf"
+secret <- "2JYUVWVz9f6QGrkS"
+```
+
+```{r}
+term <- "data-science"
+begin <- "20210816"
+end <- "20211024"
+```
+
+```{r}
+base_url <- str_c("http://api.nytimes.com/svc/search/v2/articlesearch.json?q=", term, "&begin_date=", begin, "&end_date=", end, "&facet_filter=true&api-key=", key, sep="")
+```
+
+```{r}
+data <- fromJSON(base_url, flatten=TRUE) %>% data.frame()
+```
+
+## Extracting data into dataframe
+
+```{r}
+initialQuery <- fromJSON(base_url)
+
+maxPages <- round((initialQuery$response$meta$hits[1] / 10)-1) 
+
+pages_2021 <- vector("list",length=maxPages)
+
+for(i in 0:maxPages){
+    nytSearch <- fromJSON(paste0(base_url, "&page=", i), flatten = TRUE) %>% data.frame()
+    pages_2021[[i+1]] <- nytSearch
+    Sys.sleep(5)
+}
+```
+
+```{r}
+
+nyt_2021_articles <- rbind_pages(pages_2021)
+
+```
+
+```{r}
+head(nyt_2021_articles)
+```
+
+
+
