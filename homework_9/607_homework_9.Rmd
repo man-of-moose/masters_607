@@ -27,10 +27,14 @@ library(stringr)
 
 ## Connecting to API
 
+Key and secret provided from NYTimes API site: "https://developer.nytimes.com/"
+
 ```{r}
 key <- "APHySXOpNOGSc10kLBVm8ZdVljlRIRlf"
 secret <- "2JYUVWVz9f6QGrkS"
 ```
+
+With the search api, we can list key-words to filter for, and also filter by time. For this assignment, we will look for articles related to "data-science", published anytime between the start of our semester, to today.
 
 ```{r}
 term <- "data-science"
@@ -38,29 +42,31 @@ begin <- "20210816"
 end <- "20211024"
 ```
 
+We create a "base_url" with all of the required parameters for API querying using stringr::str_c
+
 ```{r}
 base_url <- str_c("http://api.nytimes.com/svc/search/v2/articlesearch.json?q=", term, "&begin_date=", begin, "&end_date=", end, "&facet_filter=true&api-key=", key, sep="")
 ```
 
-```{r}
-data <- fromJSON(base_url, flatten=TRUE) %>% data.frame()
-```
-
 ## Extracting data into dataframe
+
+First we will perform an initial query which will return a set of documents. Part of the information we will receive contains the "maxPages" from the search. Taking this number, we will iterate through values 1:maxPages and extract all documents for each page in the page range. All of the results will be flattened into a dataframe, and then loaded into a list.
 
 ```{r}
 initialQuery <- fromJSON(base_url)
 
-maxPages <- round((initialQuery$response$meta$hits[1] / 10)-1) 
+#maxPages <- round((initialQuery$response$meta$hits[1] / 10)-1) 
 
-pages_2021 <- vector("list",length=maxPages)
+pages_2021 <- vector("list",length=15)
 
-for(i in 0:maxPages){
+for(i in 0:15){
     nytSearch <- fromJSON(paste0(base_url, "&page=", i), flatten = TRUE) %>% data.frame()
     pages_2021[[i+1]] <- nytSearch
     Sys.sleep(5)
 }
 ```
+
+Now that we have all of our dataframes in a list, we can use a simple r_bind call to aggregate them all into the same dataframe
 
 ```{r}
 
@@ -68,9 +74,13 @@ nyt_2021_articles <- rbind_pages(pages_2021)
 
 ```
 
+Looking below, we have successfully extracted and loaded over 200 NYTimes articles into a dataframe.
+
 ```{r}
 head(nyt_2021_articles)
 ```
+## Conclusion
 
+Based on the above, it is very straightforward to extract data from the NYTimes search API. In future exploration, I will further examine some of the nested columns that are present (like keywords and persons).
 
 
