@@ -1,0 +1,411 @@
+---
+title: "607_homework_10"
+author: "Alec"
+date: "10/31/2021"
+output: 
+  prettydoc::html_pretty:
+    theme: cosmo
+    highlight: github
+    keep_md: true
+    toc: true
+    toc_depth: 1
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages for assignment
+
+```{r}
+library(tidytext)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+```
+
+# Following the Chapter
+
+### View sample of AFINN (FINN ARUP Nielsen) sentiment lexicon
+
+"The AFINN lexicon assigns words with a score that runs between -5 and 5, with negative scores indicating negative sentiment and positive scores indicating positive sentiment."
+
+```{r}
+get_sentiments("afinn")
+```
+### View sample of Bing (Bing Liu and collaborators) sentiment lexicon
+
+"The bing lexicon categorizes words in a binary fashion into positive and negative categories."
+
+```{r}
+get_sentiments("bing")
+```
+
+### View sample of NRC (Saif Mohammad and Peter Turney) sentiment lexicon
+
+"The nrc lexicon categorizes words in a binary fashion (“yes”/“no”) into categories of positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, and trust."
+
+```{r}
+get_sentiments("nrc")
+```
+
+## Begin Analysis into Jane Austen
+
+```{r}
+library(janeaustenr)
+```
+
+For all books in austen_books(), add metadata for the books relative linenumber, and chapter. Then use unnest_tokens() function to generate 1-gram tokens
+
+```{r}
+tidy_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, 
+                                regex("^chapter [\\divxlc]", 
+                                      ignore_case = TRUE)))) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+
+We can now begin performing sentiment analysis using the sentment lexicons showcased before. 
+
+```{r}
+
+# create a subset of the NRC lexicon that only includes words relating to "joy"
+nrc_joy <- get_sentiments("nrc") %>% 
+  filter(sentiment == "joy")
+
+# filter tidy_books to only focus on book: "Emma". Then use an inner_join with the nrc_joy object to identify which words are in "Emma" that convey joy.
+tidy_books %>%
+  filter(book == "Emma") %>%
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+```
+
+
+Now we will examine how to capture a sentiment score for a subset of lines within a book. We will perform a similar analysis as we did above, only this time we will join all of Jane Austens Books against the Bing sentiment lexicon. Following this, we will count the positive and negative sentiment scores by book, index, and sentiment level. The index buckets will include 80 lines of text from a given book (including too much or too little text in an index will reduce the effectiveness of the subsequent sentiment score)
+
+```{r}
+jane_austen_sentiment <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+```
+
+
+
+```{r}
+
+ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
+
+Which sentiment lexicon is best? Or more approporiately, how are the sentiment lexicons different from one another?
+
+We can test this by running each of the lexicons against a single book, Pride and Prejudice.
+
+```{r}
+pride_prejudice <- tidy_books %>% 
+  filter(book == "Pride & Prejudice")
+```
+
+```{r}
+
+# Because AFINN lexicon uses a different structure than the other two (by using scores from -5:5 to indicate sentiment rather than binary classification), we will use a slightly different approach for the calculation
+afinn <- pride_prejudice %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(index = linenumber %/% 80) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(method = "AFINN")
+
+bing_and_nrc <- bind_rows(
+  pride_prejudice %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al."),
+  pride_prejudice %>% 
+    inner_join(get_sentiments("nrc") %>% 
+                 filter(sentiment %in% c("positive", 
+                                         "negative"))
+    ) %>%
+    mutate(method = "NRC")) %>%
+  count(method, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+```
+
+We can plot the response from all lexicons to get a better sense of how they differ in terms of sentiment scores across the Jane Austen book Pride and Prejudice
+
+```{r}
+bind_rows(afinn, 
+          bing_and_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+"We find similar differences between the methods when looking at other novels; the NRC sentiment is high, the AFINN sentiment has more variance, the Bing et al. sentiment appears to find longer stretches of similar text, but all three agree roughly on the overall trends in the sentiment through a narrative arc."
+
+
+
+```{r}
+get_sentiments("nrc") %>% 
+  filter(sentiment %in% c("positive", "negative")) %>% 
+  count(sentiment)
+```
+
+```{r}
+get_sentiments("bing") %>% 
+  count(sentiment)
+```
+
+## Most common positive and negative words
+
+We can use count() to get the most common positive or negative words from a corpus
+
+```{r}
+bing_word_counts <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts
+```
+
+
+```{r}
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  slice_max(n, n = 10) %>% 
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
+```
+Looking at the above graphs, we see that the term "miss" is registered in the Bing lexicon as a "negative" term, but we know from context that "miss" in this book likely means a "young, unmarried woman". With knowledge like this, we can create our own custom stop-words upfront to deal with these types of inaccuracies.
+
+```{r}
+custom_stop_words <- bind_rows(tibble(word = c("miss"),  
+                                      lexicon = c("custom")), 
+                               stop_words)
+
+custom_stop_words
+```
+## WordClouds
+
+Using the wordcloud package, we can easily create wordclouds based on the frequencies of terms in a text.
+
+```{r}
+library(wordcloud)
+
+tidy_books %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+Using comparison.cloud requires a little more preprocessing upfront, wherein we much convert our dataframe to a matrix. However, the resulting effect is worth it because it breakds the wordcloud down between positive and negative groupings.
+
+```{r}
+library(reshape2)
+
+tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+
+
+## Looking at units beyond just words
+
+Not all sentiment analysis looks simply at single 1-grams (words). Other algorithms require n-grams, or sentenses for processing. As an example, the following code demonstrate breaking a text down into tokens based on sentences, rather than single words:
+
+```{r}
+p_and_p_sentences <- tibble(text = prideprejudice) %>% 
+  unnest_tokens(sentence, text, token = "sentences")
+```
+
+```{r}
+p_and_p_sentences
+```
+
+# Applying learnings to another corpus and lexicon
+
+Using everything we've learned so far, I want to apply these steps to another corpus. For this I will choose books by Author HG Wells
+
+```{r}
+library(gutenbergr)
+
+hgwells <- gutenberg_download(c(35, 36, 5230, 159))
+```
+
+First we will tidy the HGwells text to include linenumbers
+
+```{r}
+tidy_hgwells <- hgwells %>%
+  group_by(gutenberg_id) %>%
+  mutate(
+    linenumber = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+```{r}
+tidy_hgwells
+```
+
+Now, as we demonstrated before, we can join the tidy_hgwells tokens to a set of sentiment lexicons. Let's use the Bing sentiment lexicon first
+
+```{r}
+hgwells_bing_sentiment <- tidy_hgwells %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(gutenberg_id, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+```
+
+And as before, we can see how the Bing sentiment lexicon worked for the 4 books in this corpus
+
+```{r}
+
+ggplot(hgwells_bing_sentiment, aes(index, sentiment, fill = gutenberg_id)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~gutenberg_id, ncol = 2, scales = "free_x")
+```
+
+WOW! Unlike the Jane Austen Bing Scores, we can see that HGWells is generally a much more negative writer!
+
+Let's try to compare the sentiment scores from all three sentiment lexicons described in this chapter so far
+
+```{r}
+
+afinn_hgwells <- tidy_hgwells %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(index = linenumber %/% 80) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(method = "AFINN")
+
+bing_and_nrc_hgwells <- bind_rows(
+  tidy_hgwells %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al."),
+  tidy_hgwells %>% 
+    inner_join(get_sentiments("nrc") %>% 
+                 filter(sentiment %in% c("positive", 
+                                         "negative"))
+    ) %>%
+    mutate(method = "NRC")) %>%
+  count(method, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+```
+
+And just like before, let's plot the values
+
+```{r}
+bind_rows(afinn_hgwells, 
+          bing_and_nrc_hgwells) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+What are the most positive and negative words from a corpus?
+
+```{r}
+hgwells_bing_word_counts <- tidy_hgwells %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+hgwells_bing_word_counts
+```
+
+
+```{r}
+hgwells_bing_word_counts %>%
+  group_by(sentiment) %>%
+  slice_max(n, n = 10) %>% 
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
+```
+
+
+And finally, we can generate some word clouds
+
+```{r}
+library(wordcloud)
+
+tidy_hgwells %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+
+```{r}
+
+tidy_hgwells %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+
+
+And finally, let's try to use another lexicon against the tidy_data to see how it differs. The new lexicon we will use is the Loughran-McDonald sentiment lexicon, which was created primarily for use with Financial Documents. This will create some interesting results that SHOULD differ significantly from the three lexicons we have used so far.
+
+
+Similar to NRC and Bing, the Loughran sentiment lexicon breaks down words into binary sentiment classifications ("positive", "negative")
+
+```{r}
+get_sentiments("loughran")
+```
+
+```{r}
+lou_hgwells <- tidy_hgwells %>% 
+    inner_join(get_sentiments("loughran")) %>%
+    filter(sentiment %in% c("positive", "negative")) %>%
+    count(index = linenumber %/% 80, sentiment) %>%
+    pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+    mutate(
+      sentiment = positive - negative,
+      method = "Loughran")
+```
+
+```{r}
+lou_hgwells
+```
+
+```{r}
+bind_rows(afinn_hgwells, 
+          bing_and_nrc_hgwells,
+          lou_hgwells) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+
