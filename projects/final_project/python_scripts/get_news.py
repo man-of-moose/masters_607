@@ -1,10 +1,11 @@
 from newsapi import NewsApiClient
 import pandas as pd
 
+
+
 # set up API client
-# API_KEY = "8f7a12bc8c884be7a7ba1eb3768ebc05"
-API_KEY = "0ad9231da4f141e1947a4d32b11b5fa6"
-master = NewsApiClient(api_key=API_KEY)
+api_key = pd.read_csv("~/Desktop/api_keys.csv")['key'][0]
+master = NewsApiClient(api_key=api_key)
 
 # get sources dataframe
 sources = master.get_sources()
