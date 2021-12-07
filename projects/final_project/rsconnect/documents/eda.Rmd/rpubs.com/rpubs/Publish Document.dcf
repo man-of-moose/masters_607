@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/843982/9c927d4a2da34101bbc5a61b30141eb2
+bundleId: https://api.rpubs.com/api/v1/document/843982/9c927d4a2da34101bbc5a61b30141eb2
+url: http://rpubs.com/alecm/843982
+when: 1638759877.21347
+lastSyncTime: 1638759877.2135

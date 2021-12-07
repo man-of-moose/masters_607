@@ -17,6 +17,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+```{r results='hide', message=FALSE, warning=FALSE}
+library(stringr)
+library(tidyverse)
+library(dplyr)
+library(tm)
+library(stringr)
+library(stringi)
+library(SnowballC)
+library(textstem)
+library(sentimentr)
+library(text2vec)
+library(caret)
+library(rvest)
+library(tidytext)
+library(randomForest)
+library(topicmodels)
+```
+
+
 ## Perform Scenario Design
 
 "Perform a Scenario Design analysis as described below.  Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization's customers."
