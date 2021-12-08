@@ -77,7 +77,8 @@ sources_mapping <- c(
 
 From my analysis, I have determined that there are differences to the ways that various news sources portray information about COVID 19, depending on the assigned political leanings of the news source. Additionally, I have proven that machine learning models can be used that consider a document's text, text structure, sentiment, and emotion in order to classify political leaning.
 
-In this study, the Bagged Logit Model from the Caret library, using variable normalization and TFIDF vectorization performed the best, with a accuracy score of 87.9%. This is a significant improvement from our baseline model, which has an accuracy of 34%. This suggests that machine learning can be used to identify the different patterns of text and topic between news sources of differing political biases.
+
+In this study, multiple models were tested, including Regularized Logistic Regression, Random Forest, Bagged Logistic Regression, and Naive Bayes. Generally speaking, most models were able to improve upon our baseline classification threshold of 34%. Top models were able to score accuracy levels over 80%. This suggests that machine learning can be used to identify the different patterns of text and topic between news sources of differing political biases.
 
 
 # Project Code
@@ -85,8 +86,9 @@ In this study, the Bagged Logit Model from the Caret library, using variable nor
 ## Load Data
 
 ```{r results=FALSE, message=FALSE}
-article_data <- read_csv("enriched_data.csv", show_col_types = FALSE)
+article_data <- read_csv("https://raw.githubusercontent.com/man-of-moose/masters_607/main/projects/final_project/enriched_data.csv", show_col_types = FALSE)
 ```
+
 
 ```{r}
 article_data %>%
@@ -313,7 +315,7 @@ We will use tm-package's stopwords, with some additional terms to ensure that we
 ```{r}
 my_stopwords = tm::stopwords("english")
 
-my_stopwords <- c(my_stopwords, "fox", "bbc", "apress","associated press","cnn","breitbart","vice","buzzfeed", "washington post")
+my_stopwords <- c(my_stopwords, "fox", "bbc", "apress","associated press","cnn","breitbart","vice","buzzfeed", "washington post", "li li")
 ```
 
 
@@ -421,9 +423,8 @@ left_words <- sort(rowSums(left_tdm_matrix),decreasing=TRUE)
 left_df <- data.frame(word = names(left_words),freq=left_words)
 ```
 
-
 ```{r}
-wordcloud2(data=head(left_df,100), size=.3, color="random-dark")
+wordcloud(words = left_df$word, freq = left_df$freq, min.freq = 1, max.words= 200, scale=c(1.5,0.25), random.order=FALSE, rot.per=0.35,colors=brewer.pal(8, "Dark2"))
 ```
 
 ```{r}
@@ -435,7 +436,7 @@ right_df <- data.frame(word = names(right_words),freq=right_words)
 ```
 
 ```{r}
-wordcloud2(data=head(right_df,100), size=.3, color="random-dark")
+wordcloud(words = right_df$word, freq = right_df$freq, min.freq = 1, max.words= 200, scale=c(1.5,0.25), random.order=FALSE, rot.per=0.35,colors=brewer.pal(8, "Dark2"))
 ```
 
 ```{r}
@@ -447,17 +448,15 @@ center_df <- data.frame(word = names(center_words),freq=center_words)
 ```
 
 ```{r}
-wordcloud2(data=head(center_df,100), size=.3, color="random-dark")
+wordcloud(words = center_df$word, freq = center_df$freq, min.freq = 1, max.words= 200, scale=c(1.2,0.25), random.order=FALSE, rot.per=0.35,colors=brewer.pal(8, "Dark2"))
 ```
-
-
 
 ### LDA Analysis - Topic Modeling
 
 We can use the LDA function to perform lda analysis on our document term matrix. We will set an arbitrary value for the number of topics to be created as 6
 
 ```{r}
-data_lda <- LDA(dtm, k = 6, control = list(seed=111))
+data_lda <- LDA(dtm, k = 5, control = list(seed=100))
 data_lda
 ```
 
@@ -483,17 +482,15 @@ top_terms %>%
 
 From the above charts, we can see which words are most related to each of the generated topics following LDA. We can use our own best judgement to categorize each of the topics.
 
-Topic 1 - children
+Topic 1 - work, mandates
 
 Topic 2 - interviews
 
-Topic 3 - travel
+Topic 3 - sports
 
-Topic 4 - mandates
+Topic 4 - travel
 
-Topic 5 - sports
-
-Topic 6 - vaccines
+Topic 5 - children
 
 ```{r}
 document_gamma <- tidy(data_lda, matrix = "gamma")
@@ -511,17 +508,15 @@ document_classification <- document_gamma %>%
 ```
 
 ```{r}
-document_classification$topic <- replace(document_classification$topic, document_classification$topic==1, "children")
+document_classification$topic <- replace(document_classification$topic, document_classification$topic==1, "work, mandates")
 
 document_classification$topic <- replace(document_classification$topic, document_classification$topic==2, "interviews")
 
-document_classification$topic <- replace(document_classification$topic, document_classification$topic==3, "travel")
+document_classification$topic <- replace(document_classification$topic, document_classification$topic==3, "sports")
 
-document_classification$topic <- replace(document_classification$topic, document_classification$topic==4, "mandates")
+document_classification$topic <- replace(document_classification$topic, document_classification$topic==4, "travel")
 
-document_classification$topic <- replace(document_classification$topic, document_classification$topic==5, "sports")
-
-document_classification$topic <- replace(document_classification$topic, document_classification$topic==6, "vaccines")
+document_classification$topic <- replace(document_classification$topic, document_classification$topic==5, "children")
 ```
 
 ```{r}
